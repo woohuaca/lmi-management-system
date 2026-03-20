@@ -1,0 +1,4 @@
+version: 1
+display_name: LMI Management System
+short_description: 用 LMI 方法协同角色目标、月周日计划与复盘分析
+default_prompt: 用 LMI 管理系统模式协助我，先判断我是角色、月、周、日还是分析场景，再输出一版可执行草案。
