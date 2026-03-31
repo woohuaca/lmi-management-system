@@ -198,6 +198,10 @@ This repository is the source-of-truth version used to sync:
 - OpenClaw managed skill copy
 - Codex skill copy
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Repository
 
 GitHub: [woohuaca/lmi-management-system](https://github.com/woohuaca/lmi-management-system)
