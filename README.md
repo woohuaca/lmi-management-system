@@ -185,6 +185,7 @@ lmi-management-system/
 ## Main Files To Read
 
 - [SKILL.md](SKILL.md)
+- [CHANGELOG.md](CHANGELOG.md)
 - [references/storage-system.md](references/storage-system.md)
 - [references/openclaw-execution-playbook.md](references/openclaw-execution-playbook.md)
 - [references/review-system.md](references/review-system.md)
