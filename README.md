@@ -82,6 +82,10 @@ Recommended storage in an OpenClaw memory workspace:
 - Role goals must flow into month, week, and day instead of staying only in the role sheet
 - Reflections belong in reviews, ideas belong in capture then weekly filtering, and only validated conclusions belong in project facts
 
+## Using With Azai
+
+See [references/azai-usage-guide.md](references/azai-usage-guide.md) for a practical operating guide and ready-to-send prompts for `azai`.
+
 ## Install
 
 Copy the folder into your Codex or OpenClaw skills directory:
