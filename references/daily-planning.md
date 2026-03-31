@@ -6,11 +6,11 @@ Use this reference for daily work planning and daily review.
 
 - Start from weekly outcomes and monthly priorities.
 - Use the LMI categories from the original form:
-  - `A1` first priority
-  - `A2` second priority
-  - `B` important
-  - `D` delegated
-- Separate urgent items, important items, contact or follow-up items, discussion plan, schedule, and completed items.
+  - `A` important items
+  - `B` urgent items
+  - `C` contact or follow-up items
+  - `D` meetings, discussions, or coordination items
+- Separate important items, urgent items, contact or follow-up items, meetings or discussions, schedule, and completed items.
 - Put appointments and time-specific work on the schedule side.
 - Keep the left side for priority decisions, not just raw capture.
 - Mark progress status when relevant: delegated, in progress, postponed, completed.

@@ -47,22 +47,37 @@ Use for translating monthly goals into weekly outcomes, high-priority actions, m
 Reference: [references/weekly-planning-review.md](references/weekly-planning-review.md)
 Template: [assets/templates/weekly-plan.md](assets/templates/weekly-plan.md)
 
-4. `Weekly Review`
+4. `Daily Review`
+Use for end-of-day review, attention drift review, completion reflection, and tomorrow's first move.
+Reference: [references/review-system.md](references/review-system.md)
+Template: [assets/templates/daily-review.md](assets/templates/daily-review.md)
+
+5. `Weekly Review`
 Use for weekly outcome review, time investment review, root cause analysis, carry-forward decisions, and improvement actions.
-Reference: [references/weekly-planning-review.md](references/weekly-planning-review.md)
+Reference: [references/review-system.md](references/review-system.md)
 Template: [assets/templates/weekly-review.md](assets/templates/weekly-review.md)
 
-5. `Daily Work Plan`
+6. `Monthly Review`
+Use for monthly target review, personal and company focus review, mechanism review, and next-month adjustments.
+Reference: [references/review-system.md](references/review-system.md)
+Template: [assets/templates/monthly-review.md](assets/templates/monthly-review.md)
+
+7. `Role Review`
+Use for reviewing whether a role definition, responsibilities, key results, and time investment are still aligned.
+Reference: [references/review-system.md](references/review-system.md)
+Template: [assets/templates/role-review.md](assets/templates/role-review.md)
+
+8. `Daily Work Plan`
 Use for daily focus, time blocking, meeting pressure control, delegation, and end-of-day review.
 Reference: [references/daily-planning.md](references/daily-planning.md)
 Template: [assets/templates/daily-work-plan.md](assets/templates/daily-work-plan.md)
 
-6. `Time Image`
+9. `Time Image`
 Use for ideal weekly time design, high-return activity placement, protected focus blocks, and manager rhythm mapping.
 Reference: [references/analytics-review.md](references/analytics-review.md)
 Template: [assets/templates/time-image.md](assets/templates/time-image.md)
 
-7. `Stats Analysis`
+10. `Stats Analysis`
 Use for personal productivity summary, progress analysis, input-output analysis, variance review, management mechanism review, and improvement recommendations.
 Reference: [references/analytics-review.md](references/analytics-review.md)
 Template: [assets/templates/stats-analysis.md](assets/templates/stats-analysis.md)
@@ -91,6 +106,7 @@ Read [references/agent-collaboration-rules.md](references/agent-collaboration-ru
 - In reviews, separate target issues, execution issues, and mechanism issues.
 
 For orchestration across month, week, day, and analysis, read [references/openclaw-execution-playbook.md](references/openclaw-execution-playbook.md) when the user wants ongoing collaboration instead of a one-off plan.
+For how to store plans and reviews in a stable way, read [references/storage-system.md](references/storage-system.md).
 
 ## Output Rules
 

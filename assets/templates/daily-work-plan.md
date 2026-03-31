@@ -2,13 +2,13 @@
 
 ## Priority Legend
 
-- A1:
-- A2:
-- B:
-- D:
+- A: important items
+- B: urgent items
+- C: contact or follow-up items
+- D: meetings, discussions, or coordination items
 - Status marks: delegated, in progress, postponed, completed
 
-## Urgent Items
+## A Important Items
 
 - Item:
   - priority code:
@@ -17,7 +17,7 @@
   - priority code:
   - notes:
 
-## Important Items
+## B Urgent Items
 
 - Item:
   - priority code:
@@ -26,13 +26,13 @@
   - priority code:
   - notes:
 
-## Contact Or Follow-Up
+## C Contact Or Follow-Up
 
 - Contact or follow-up 1:
 - Contact or follow-up 2:
 - Contact or follow-up 3:
 
-## Discussion Plan
+## D Meetings And Discussion
 
 - Person or topic:
   - action 1:
