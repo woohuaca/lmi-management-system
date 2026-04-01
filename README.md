@@ -186,6 +186,7 @@ lmi-management-system/
 
 - [SKILL.md](SKILL.md)
 - [CHANGELOG.md](CHANGELOG.md)
+- [RELEASE_NOTES_v1.0.0.md](RELEASE_NOTES_v1.0.0.md)
 - [references/storage-system.md](references/storage-system.md)
 - [references/openclaw-execution-playbook.md](references/openclaw-execution-playbook.md)
 - [references/review-system.md](references/review-system.md)
