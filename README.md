@@ -149,6 +149,42 @@ These prompts are good first tests:
 - `按 LMI 时间图像帮我设计理想的一周时间分配`
 - `用 LMI 个人生产力摘要表分析我这周的时间投入`
 
+## Example Output
+
+Here is a short example of the kind of structured output this skill is meant to produce.
+
+Prompt:
+
+```text
+用 LMI 把我的月目标拆成这周的工作计划
+```
+
+Example output:
+
+```text
+Week Theme
+- 本周主题：把月目标收敛成可推进的 2 个结果
+- 对应月目标：完成制造业场景验证，并建立客户跟进机制
+
+This Week's Top Goals
+- Goal 1：完成制造业场景 demo 的第一轮可演示版本
+- Goal 2：完成 8 个重点客户的跟进触达
+
+High-Return Activities
+- Activity 1：保护 2 个 90 分钟深度工作块做 demo
+- Activity 2：集中 1 个时间块完成客户跟进 SOP
+
+Delegation And Follow-Up
+- Must personally drive：demo 核心逻辑、客户价值主张
+- Delegate：资料整理、会后纪要
+- Follow up only：客户触达结果汇总
+
+Next 1-3 Moves
+- Move 1：先确定本周只保留 2 个 top goals
+- Move 2：把周三前的深度工作时间块锁定
+- Move 3：列出 8 个客户跟进名单和触达方式
+```
+
 ## Using With Azai
 
 See [references/azai-usage-guide.md](references/azai-usage-guide.md) for a practical usage guide and ready-to-send prompts for `azai`.
