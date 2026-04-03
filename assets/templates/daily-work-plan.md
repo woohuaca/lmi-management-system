@@ -8,6 +8,13 @@
 - D: meetings, discussions, or coordination items
 - Status marks: delegated, in progress, postponed, completed
 
+## Imported From Yesterday
+
+- Yesterday's biggest progress:
+- Yesterday's unfinished items to re-decide:
+- Yesterday's tomorrow first move:
+- Carry forward decisions:
+
 ## A Important Items
 
 - Item:

@@ -30,6 +30,7 @@ Use the nearest layer that can unlock action:
 
 - `Monthly Plan -> Weekly Plan`: turn monthly focus into 1 to 3 weekly wins and high-return activities
 - `Weekly Plan -> Daily Work Plan`: turn weekly wins into one main result for today and a small number of supporting actions
+- `Daily Review -> Daily Work Plan`: import yesterday's review, unfinished items, and tomorrow's first move into today's first draft before adding new work
 - `Daily Work Plan -> Daily Review`: summarize what moved, what slipped, and what tomorrow needs
 - `Daily Review -> Weekly Review`: compress recurring patterns into weekly lessons
 - `Time Image -> Stats Analysis`: compare ideal rhythm with actual time use
@@ -59,6 +60,8 @@ When possible, carry these forward explicitly:
 
 - top monthly goal
 - current weekly win
+- yesterday's unfinished items and their re-decisions
+- yesterday's tomorrow-first-move note
 - today's most important result
 - repeated interruption pattern
 - high-return activity to protect

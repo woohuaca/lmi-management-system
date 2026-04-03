@@ -5,6 +5,8 @@ Use this reference for daily work planning and daily review.
 ## Daily Planning Rules
 
 - Start from weekly outcomes and monthly priorities.
+- Start by importing yesterday's daily review and unfinished items before adding new work.
+- Re-check each unfinished item from yesterday and decide whether it should continue today, move later this week, be delegated, or be dropped.
 - Use the LMI categories from the original form:
   - `A` important items
   - `B` urgent items
@@ -21,3 +23,4 @@ Use this reference for daily work planning and daily review.
 - What interrupted focus?
 - What should be protected tomorrow?
 - What should be delegated, declined, or delayed?
+- Which unfinished items should be carried into tomorrow's draft, and under which category?
