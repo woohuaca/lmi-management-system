@@ -1,0 +1,25 @@
+# First-wave LMI migration manifest
+
+Source root: /Users/woohuaca/.openclaw/workspace-main/memory
+Target root: /Users/woohuaca/.openclaw/workspace-azai/memory
+
+OK  2026-03-18.md
+OK  2026-03-20.md
+OK  2026-03-25.md
+OK  2026-03-26.md
+OK  2026-03-27.md
+OK  2026-03-28.md
+OK  2026-04-01.md
+OK  3月角色澄清表复盘-2026.md
+OK  Q2-OKR-2026.md
+OK  Q2角色目标-2026.md
+OK  周复盘-2026-03-24-28.md
+OK  周复盘-2026-03-24-28-完整版.md
+OK  角色澄清表-Q2目标-2026.md
+OK  README_记忆写入规范.md
+OK  日报归档/2026-03-16_工作日志.md
+OK  日报归档/2026-03-17_工作日志.md
+OK  日报归档/2026-03-30_工作日志.md
+OK  模板/模板_日报归档.md
+OK  模板/模板_长期偏好.md
+OK  模板/模板_项目事实.md

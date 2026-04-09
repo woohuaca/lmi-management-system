@@ -1,0 +1,127 @@
+{
+  "phase": "phase-1-copy-only",
+  "source_root": "/Users/woohuaca/.openclaw/workspace-main/memory",
+  "target_root": "/Users/woohuaca/.openclaw/workspace-azai/memory",
+  "files": [
+    {
+      "relative_path": "2026-03-18.md",
+      "exists_in_main": true,
+      "size_bytes": 214,
+      "is_dir": false
+    },
+    {
+      "relative_path": "2026-03-20.md",
+      "exists_in_main": true,
+      "size_bytes": 2760,
+      "is_dir": false
+    },
+    {
+      "relative_path": "2026-03-25.md",
+      "exists_in_main": true,
+      "size_bytes": 2348,
+      "is_dir": false
+    },
+    {
+      "relative_path": "2026-03-26.md",
+      "exists_in_main": true,
+      "size_bytes": 4536,
+      "is_dir": false
+    },
+    {
+      "relative_path": "2026-03-27.md",
+      "exists_in_main": true,
+      "size_bytes": 1607,
+      "is_dir": false
+    },
+    {
+      "relative_path": "2026-03-28.md",
+      "exists_in_main": true,
+      "size_bytes": 394,
+      "is_dir": false
+    },
+    {
+      "relative_path": "2026-04-01.md",
+      "exists_in_main": true,
+      "size_bytes": 1326,
+      "is_dir": false
+    },
+    {
+      "relative_path": "3月角色澄清表复盘-2026.md",
+      "exists_in_main": true,
+      "size_bytes": 7298,
+      "is_dir": false
+    },
+    {
+      "relative_path": "Q2-OKR-2026.md",
+      "exists_in_main": true,
+      "size_bytes": 3874,
+      "is_dir": false
+    },
+    {
+      "relative_path": "Q2角色目标-2026.md",
+      "exists_in_main": true,
+      "size_bytes": 2013,
+      "is_dir": false
+    },
+    {
+      "relative_path": "周复盘-2026-03-24-28.md",
+      "exists_in_main": true,
+      "size_bytes": 7073,
+      "is_dir": false
+    },
+    {
+      "relative_path": "周复盘-2026-03-24-28-完整版.md",
+      "exists_in_main": true,
+      "size_bytes": 7550,
+      "is_dir": false
+    },
+    {
+      "relative_path": "角色澄清表-Q2目标-2026.md",
+      "exists_in_main": true,
+      "size_bytes": 5249,
+      "is_dir": false
+    },
+    {
+      "relative_path": "日报归档/2026-03-16_工作日志.md",
+      "exists_in_main": true,
+      "size_bytes": 281,
+      "is_dir": false
+    },
+    {
+      "relative_path": "日报归档/2026-03-17_工作日志.md",
+      "exists_in_main": true,
+      "size_bytes": 441,
+      "is_dir": false
+    },
+    {
+      "relative_path": "日报归档/2026-03-30_工作日志.md",
+      "exists_in_main": true,
+      "size_bytes": 101,
+      "is_dir": false
+    },
+    {
+      "relative_path": "README_记忆写入规范.md",
+      "exists_in_main": true,
+      "size_bytes": 720,
+      "is_dir": false
+    },
+    {
+      "relative_path": "模板/模板_日报归档.md",
+      "exists_in_main": true,
+      "size_bytes": 160,
+      "is_dir": false
+    },
+    {
+      "relative_path": "模板/模板_长期偏好.md",
+      "exists_in_main": true,
+      "size_bytes": 277,
+      "is_dir": false
+    },
+    {
+      "relative_path": "模板/模板_项目事实.md",
+      "exists_in_main": true,
+      "size_bytes": 258,
+      "is_dir": false
+    }
+  ]
+}

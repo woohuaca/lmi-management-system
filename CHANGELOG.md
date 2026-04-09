@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-04-09
+
+### Added
+
+- `azai` migration planning and manifests for moving LMI work onto the dedicated workspace
+- regression checklist for OpenClaw, Feishu, and LMI end-to-end verification
+- weekly, monthly, and role review generator scripts for the `azai` LMI workflow
+
+### Improved
+
+- `azai`-first LMI daily planning and review flow
+- daily plan now carries forward yesterday's review context, weekly anchors, and high-return activities
+- daily plan now checks Feishu calendar availability and generates more realistic workday schedules
+- daily plan output now emphasizes `Today's Primary Result`, cleaner `A/B/C/D` categories, and less noisy system metadata
+- daily review now includes work-experience feedback and writes back better next-day carry-forward guidance
+- README with clearer operational guidance for Feishu/OpenClaw regression and `azai` usage
+
 ## 2026-03-31
 
 ### Added

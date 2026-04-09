@@ -189,6 +189,10 @@ Next 1-3 Moves
 
 See [references/azai-usage-guide.md](references/azai-usage-guide.md) for a practical usage guide and ready-to-send prompts for `azai`.
 
+For OpenClaw / Feishu / agent-routing verification after changes, use:
+
+- [references/openclaw-feishu-lmi-regression-checklist.md](references/openclaw-feishu-lmi-regression-checklist.md)
+
 Recommended standing instruction:
 
 ```text
