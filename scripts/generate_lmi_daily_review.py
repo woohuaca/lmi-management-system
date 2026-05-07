@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import re
 from datetime import date
 from pathlib import Path
 
 PRIMARY_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-azai/memory')
 FALLBACK_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-main/memory')
+AZAI_SESSION_DIR = Path('/Users/woohuaca/.openclaw/agents/azai/sessions')
 PLACEHOLDER_MARKERS = ('待补充', '待今晚', '待确认')
 GUIDANCE_MARKERS = ('当前无明确', '当前无固定', '建议开工前', '建议先补', '请至少补', '请补 1')
 
@@ -46,6 +48,82 @@ def lines_under(text: str, heading: str) -> list[str]:
     return out
 
 
+def latest_session_daily_plan(today: date) -> dict | None:
+    target = f'今日 LMI 计划 | {today.isoformat()}'
+    best: dict | None = None
+    best_ts = ''
+    if not AZAI_SESSION_DIR.exists():
+        return None
+    for path in sorted(AZAI_SESSION_DIR.glob('*.jsonl')):
+        try:
+            lines = path.read_text(encoding='utf-8').splitlines()
+        except Exception:
+            continue
+        for raw in lines:
+            try:
+                row = json.loads(raw)
+            except Exception:
+                continue
+            if row.get('type') != 'message':
+                continue
+            msg = row.get('message') or {}
+            if msg.get('role') != 'assistant':
+                continue
+            texts: list[str] = []
+            for part in msg.get('content') or []:
+                if part.get('type') == 'text':
+                    texts.append(part.get('text', ''))
+            text = '\n'.join(texts)
+            if target not in text:
+                continue
+            ts = row.get('timestamp', '')
+            if ts >= best_ts:
+                best_ts = ts
+                best = {'timestamp': ts, 'path': str(path), 'text': text}
+    return best
+
+
+def parse_final_plan_rows(text: str) -> list[dict]:
+    rows: list[dict] = []
+    in_table = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('|') and '优先级' in stripped and '事项' in stripped and '状态' in stripped:
+            in_table = True
+            continue
+        if in_table and stripped.startswith('|--------'):
+            continue
+        if in_table and stripped.startswith('|'):
+            cells = [c.strip() for c in stripped.strip('|').split('|')]
+            if len(cells) >= 5:
+                rows.append(
+                    {
+                        'priority': cells[0],
+                        'item': cells[1],
+                        'goal': cells[2],
+                        'time': cells[3],
+                        'status': cells[4],
+                    }
+                )
+            continue
+        if in_table and (not stripped or stripped.startswith('### ')):
+            break
+    return rows
+
+
+def normalize_table_item(item: str) -> str:
+    clean = re.sub(r'【.*?】', '', item).strip()
+    clean = re.sub(r'\s+', ' ', clean)
+    return clean
+
+
+def plan_rows_from_session(today: date) -> list[dict]:
+    session_plan = latest_session_daily_plan(today)
+    if not session_plan:
+        return []
+    return parse_final_plan_rows(session_plan['text'])
+
+
 def section_bullets(text: str, heading: str) -> list[str]:
     items: list[str] = []
     for line in lines_under(text, heading):
@@ -53,6 +131,14 @@ def section_bullets(text: str, heading: str) -> list[str]:
         if stripped.startswith('- '):
             items.append(stripped[2:].strip())
     return items
+
+
+def anchor_value(text: str, label: str) -> str:
+    pattern = rf'-\s+{re.escape(label)}：\s*(.+)'
+    match = re.search(pattern, text)
+    if match:
+        return match.group(1).strip()
+    return ''
 
 
 def strip_code_prefix(item: str) -> str:
@@ -88,6 +174,61 @@ def plan_items(text: str) -> list[str]:
             if meaningful(clean):
                 items.append(clean)
     return items
+
+
+def session_completed(rows: list[dict]) -> list[str]:
+    out: list[str] = []
+    for row in rows:
+        status = row.get('status', '')
+        item = normalize_table_item(row.get('item', ''))
+        if item and '✅' in status:
+            out.append(item)
+    return dedupe_keep_order(out)
+
+
+def session_in_progress(rows: list[dict]) -> list[str]:
+    out: list[str] = []
+    for row in rows:
+        status = row.get('status', '')
+        item = normalize_table_item(row.get('item', ''))
+        if item and ('⏳' in status or '待开始' in status or '即将开始' in status):
+            out.append(item)
+    return dedupe_keep_order(out)
+
+
+def session_unfinished(rows: list[dict]) -> list[str]:
+    out: list[str] = []
+    for row in rows:
+        status = row.get('status', '')
+        item = normalize_table_item(row.get('item', ''))
+        if not item or '✅' in status:
+            continue
+        out.append(item)
+    return dedupe_keep_order(out)
+
+
+def session_top(rows: list[dict]) -> str:
+    for row in rows:
+        priority = row.get('priority', '')
+        item = normalize_table_item(row.get('item', ''))
+        if item and 'A1' in priority:
+            return item
+    for row in rows:
+        item = normalize_table_item(row.get('item', ''))
+        if item:
+            return item
+    return ''
+
+
+def pick_tomorrow_first_move(existing_value: str, unfinished: list[str], top: str, done: list[str]) -> str:
+    if meaningful(existing_value):
+        if unfinished and existing_value in unfinished:
+            return existing_value
+        if top and existing_value == top and top not in done:
+            return existing_value
+    if unfinished:
+        return unfinished[0]
+    return top or '待补充明天第一步'
 
 
 def completed(text: str) -> list[str]:
@@ -187,18 +328,24 @@ def main() -> None:
     today_rel = f'{today.isoformat()}.md'
     today_path, today_source = resolve_memory_file(today_rel)
     text = read_text(today_path)
+    session_rows = plan_rows_from_session(today)
+    month_role = anchor_value(text, '本月主角色')
+    month_goals = anchor_value(text, '本月重点目标')
+    week_role = anchor_value(text, '本周主角色')
+    week_goals = anchor_value(text, '本周关键结果')
 
     planned = plan_items(text)
-    done = completed(text)
-    doing = concrete_in_progress(text)
-    unfinished = unfinished_candidates(text)
-    top = planned[0] if planned else (unfinished[0] if unfinished else '待补充今日最重要结果')
+    done = session_completed(session_rows) or completed(text)
+    doing = session_in_progress(session_rows) or concrete_in_progress(text)
+    unfinished = session_unfinished(session_rows) or unfinished_candidates(text)
+    top = session_top(session_rows) or (planned[0] if planned else (unfinished[0] if unfinished else '待补充今日最重要结果'))
     happened = '已完成' if done else ('部分推进' if existing_review_value(text, 'Biggest progress') else '待确认')
     biggest_progress = existing_review_value(text, 'Biggest progress') or (done[0] if done else '待补充今天最重要进展')
     main_interruption = existing_review_value(text, 'Main interruption') or '待补充今天最大打断'
     work_experience = existing_review_value(text, 'Work experience') or '待补充今天整体工作的体验与原因'
     low_value = '待补充今天的低价值投入或注意力漂移'
-    tomorrow_first_move = existing_review_value(text, 'Tomorrow First Move') or (unfinished[0] if unfinished else top)
+    existing_tomorrow_first_move = existing_review_value(text, 'Tomorrow First Move')
+    tomorrow_first_move = pick_tomorrow_first_move(existing_tomorrow_first_move, unfinished, top, done)
     completed_prompt = '请至少补 1 条今天已完成事项，优先填最接近 A1/A2 的结果。'
     progress_prompt = '请补 1 句今天最重要推进，哪怕只是部分推进也可以。'
     interruption_prompt = '请补 1 个今天最大的打断或分心来源。'
@@ -211,8 +358,20 @@ def main() -> None:
     print('## Daily Snapshot\n')
     print(f'- Date: {today.isoformat()}')
     print(f'- Review source: {today_source}')
+    if session_rows:
+        print('- Final day plan source: latest azai Feishu session update')
     print(f'- Today\'s most important result: {top}')
     print(f'- Did it happen: {happened}')
+    if month_role or month_goals or week_role or week_goals:
+        print('- Anchor context:')
+        if month_role:
+            print(f'  - Monthly main role: {month_role}')
+        if month_goals:
+            print(f'  - Monthly top goals: {month_goals}')
+        if week_role:
+            print(f'  - Weekly main role: {week_role}')
+        if week_goals:
+            print(f'  - Weekly key results: {week_goals}')
 
     print('\n## Completed Items\n')
     if done:

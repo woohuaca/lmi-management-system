@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-05-07
+
+### Improved
+
+- daily plan now reads current-month plan and current-month role clarification directly, instead of relying mainly on yesterday carry-forward plus the last weekly file
+- daily planning priority now follows `month -> role -> week -> yesterday -> calendar`, so `A1` is less likely to be hijacked by an operational reminder such as checking the schedule
+- weekly plan now uses May monthly goals and May role weights as its primary source of truth, with weekly deadline items moved behind the main monthly battle line
+- daily review now shows monthly and weekly anchor context, making end-of-day reflection easier to tie back to role and goal intent
+- customer-related `C` follow-up items are now compressed into fewer, more natural action lines instead of repeating near-duplicate follow-up text
+
 ## 2026-04-09
 
 ### Added

@@ -30,6 +30,13 @@ def resolve_memory_file(rel_path: str) -> tuple[Path, str]:
     return primary, 'workspace-azai/memory (missing)'
 
 
+def latest_matching(memory_dir: Path, patterns: list[str]) -> Path | None:
+    candidates: list[Path] = []
+    for pattern in patterns:
+        candidates.extend(memory_dir.glob(pattern))
+    return sorted(set(candidates))[-1] if candidates else None
+
+
 def section_lines(text: str, headings: list[str]) -> list[str]:
     if not text:
         return []
@@ -139,6 +146,44 @@ def dedupe_keep_order(items: list[str]) -> list[str]:
     return out
 
 
+def first_meaningful(items: list[str]) -> str:
+    for item in items:
+        if meaningful(item):
+            return item.strip()
+    return ''
+
+
+def clean_md(text: str) -> str:
+    value = text.strip()
+    value = re.sub(r'\*\*(.+?)\*\*', r'\1', value)
+    value = re.sub(r'`(.+?)`', r'\1', value)
+    return re.sub(r'\s+', ' ', value).strip()
+
+
+def normalize_role_name(text: str) -> str:
+    value = clean_md(text)
+    value = re.sub(r'^\d+\.\s*', '', value)
+    value = re.sub(r'^角色\d+[：:]\s*', '', value)
+    return value.strip()
+
+
+def is_operational_first_move(text: str) -> bool:
+    value = clean_md(text)
+    operational_markers = [
+        '检查日程',
+        '检查明日日程',
+        '检查今天日程',
+        '查看日历',
+        '确认日历',
+        '保护半天时间块',
+        '安排时间块',
+        '回填',
+        '补填',
+        '补昨天',
+    ]
+    return any(marker in value for marker in operational_markers)
+
+
 def strip_priority_prefix(item: str) -> str:
     return re.sub(r'^[A-D]\d?\s+', '', item).strip()
 
@@ -153,6 +198,137 @@ def explode_compound_items(items: list[str]) -> list[str]:
         elif clean:
             out.append(clean)
     return dedupe_keep_order(out)
+
+
+def current_month_monthly_plan(today: date) -> tuple[Path | None, str]:
+    prefix = today.strftime('%Y-%m')
+    patterns = [
+        f'{prefix}_LMI_monthly_plan_complete.md',
+        f'{prefix}_LMI_monthly_plan.md',
+    ]
+    primary = latest_matching(PRIMARY_MEMORY_DIR, patterns)
+    if primary:
+        return primary, 'workspace-azai/memory'
+    fallback = latest_matching(FALLBACK_MEMORY_DIR, patterns)
+    if fallback:
+        return fallback, 'workspace-main/memory (fallback)'
+    return None, 'monthly plan missing'
+
+
+def current_month_role_file(today: date) -> tuple[Path | None, str]:
+    prefix = today.strftime('%Y-%m')
+    patterns = [
+        f'{prefix}_role_clarification.md',
+    ]
+    primary = latest_matching(PRIMARY_MEMORY_DIR, patterns)
+    if primary:
+        return primary, 'workspace-azai/memory'
+    fallback = latest_matching(FALLBACK_MEMORY_DIR, patterns)
+    if fallback:
+        return fallback, 'workspace-main/memory (fallback)'
+    return None, 'role clarification missing'
+
+
+def monthly_top_goals(text: str) -> list[str]:
+    items: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('🎯'):
+            items.append(clean_md(stripped.lstrip('🎯').strip()))
+    if items:
+        return dedupe_keep_order(items)[:4]
+    capture = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('## Top Personal And Company Goals'):
+            capture = True
+            continue
+        if capture and stripped.startswith('## '):
+            break
+        if capture and stripped.startswith('- '):
+            items.append(clean_md(stripped[2:].strip()))
+    return dedupe_keep_order(items)[:4]
+
+
+def monthly_company_focus_goals(text: str) -> list[str]:
+    items: list[str] = []
+    for line in section_lines(text, ["## This Month's Company Focus Goals"]):
+        stripped = line.strip()
+        if stripped.startswith('- '):
+            clean = re.sub(r'^- ', '', stripped)
+            items.append(clean_md(clean))
+    return dedupe_keep_order(items)[:4]
+
+
+def monthly_hras(text: str) -> list[str]:
+    items: list[str] = []
+    in_table = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('## High-Return Activity Items'):
+            in_table = True
+            continue
+        if in_table and stripped.startswith('## '):
+            break
+        if in_table and stripped.startswith('|') and not stripped.startswith('|---') and '高回报活动' not in stripped:
+            parts = [p.strip() for p in stripped.strip('|').split('|')]
+            if parts and meaningful(parts[0]):
+                items.append(clean_md(parts[0]))
+    return dedupe_keep_order(items)[:4]
+
+
+def role_weights(text: str) -> list[tuple[str, int]]:
+    items: list[tuple[str, int]] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith('| **'):
+            continue
+        parts = [p.strip() for p in stripped.strip('|').split('|')]
+        if len(parts) < 3 or '角色' in parts[0]:
+            continue
+        role_name = normalize_role_name(parts[0])
+        pct_match = re.search(r'(\d+)%', parts[2])
+        if role_name and pct_match:
+            items.append((role_name, int(pct_match.group(1))))
+    return items
+
+
+def role_focus_from_current_month(text: str) -> str:
+    weights = role_weights(text)
+    if not weights:
+        return ''
+    weights.sort(key=lambda item: (-item[1], item[0]))
+    return weights[0][0]
+
+
+def role_key_goals(text: str, role_name: str) -> list[str]:
+    if not text or not role_name:
+        return []
+    lines = text.splitlines()
+    capture_role = False
+    capture_goals = False
+    items: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        role_match = re.match(r'##\s+角色\d+：(.+?)（', stripped)
+        if role_match:
+            capture_role = normalize_role_name(role_match.group(1)) == normalize_role_name(role_name)
+            capture_goals = False
+            continue
+        if capture_role and stripped.startswith('### 5月关键目标'):
+            capture_goals = True
+            continue
+        if capture_role and capture_goals and stripped.startswith('### '):
+            break
+        if capture_role and capture_goals:
+            goal_match = re.match(r'\d+\.\s+\*\*(.+?)\*\*[:：]?\s*(.*)', stripped)
+            if goal_match:
+                title = clean_md(goal_match.group(1).strip())
+                rest = clean_md(goal_match.group(2).strip())
+                items.append(f'{title}：{rest}' if rest else title)
+            elif re.match(r'\d+\.\s+', stripped):
+                items.append(clean_md(re.sub(r'^\d+\.\s+', '', stripped).strip()))
+    return dedupe_keep_order(items)[:3]
 
 
 def classify(items: list[str], primary_items: list[str] | None = None) -> tuple[list[str], list[str], list[str], list[str]]:
@@ -382,18 +558,32 @@ def fallback_schedule(a_items: list[str], c_items: list[str], d_items: list[str]
 def build_followups(a_items: list[str], weekly_goals: list[str], weekly_hras_items: list[str]) -> list[str]:
     items: list[str] = []
     source = explode_compound_items(a_items + weekly_goals + weekly_hras_items)
+    has_customer_pipeline = False
     for raw in source:
         clean = strip_priority_prefix(raw)
         if not meaningful(clean):
             continue
-        if '客户' in clean or '跟进' in clean:
-            items.append(f'跟进{clean}')
+        if '客户A进度对齐会' in clean or ('对齐会' in clean and '客户' in clean):
+            items.append('确认客户A进度对齐会的安排、结论与下一步')
+        elif '客户' in clean or '跟进' in clean:
+            has_customer_pipeline = True
+            continue
+        elif clean.startswith(('跟进', '联系', '确认')):
+            items.append(clean)
+        elif clean.startswith('系统跟进'):
+            has_customer_pipeline = True
+            continue
+        elif '客户转化加速' in clean:
+            has_customer_pipeline = True
+            continue
         elif '提交' in clean and 'Charter' in clean:
             items.append('确认Charter提交状态，并跟进IPMT反馈')
         elif '方案启动' in clean:
             items.append('与相关人对齐新设计方案启动条件与下一步')
         elif '版本更新方向确定' in clean:
             items.append('对齐Charter版本更新方向，并确认责任人与时点')
+    if has_customer_pipeline:
+        items.insert(0, '推进8个意向客户跟进，推动50%进入下一阶段')
     return dedupe_keep_order(items)[:3]
 
 
@@ -428,6 +618,11 @@ def build_output(
     unfinished: list[str],
     tomorrow_first_move: str,
     carry: list[str],
+    monthly_source: str,
+    monthly_goals: list[str],
+    monthly_hras_items: list[str],
+    monthly_role_focus: str,
+    monthly_role_goals: list[str],
     weekly_source: str,
     weekly_role: str,
     weekly_goals: list[str],
@@ -448,6 +643,15 @@ def build_output(
     tomorrow_first_move_display = strip_priority_prefix(tomorrow_first_move) if meaningful(tomorrow_first_move) else '昨晚未回填 Tomorrow First Move，建议先确认今天的第一步。'
     show_d_placeholder = bool(d_display) and all('待补充' in item for item in d_display)
     carry_display = carry[:2]
+    monthly_anchor_lines: list[str] = []
+    if monthly_role_focus:
+        monthly_anchor_lines.append(f'本月主角色：{monthly_role_focus}')
+    if monthly_goals:
+        monthly_anchor_lines.append(f'本月重点目标：{"；".join(monthly_goals[:2])}')
+    if monthly_role_goals:
+        monthly_anchor_lines.append(f'本月角色关键目标：{"；".join(monthly_role_goals[:2])}')
+    if monthly_hras_items:
+        monthly_anchor_lines.append(f'本月高回报活动：{"；".join(monthly_hras_items[:2])}')
     weekly_anchor_lines: list[str] = []
     if weekly_role:
         weekly_anchor_lines.append(f'本周主角色：{weekly_role}')
@@ -469,6 +673,10 @@ def build_output(
     out.append('- 今日承接决定：')
     for line in carry_display:
         out.append(f'  {line}')
+    if monthly_anchor_lines:
+        out.append('\n## 本月锚点\n')
+        for line in monthly_anchor_lines:
+            out.append(f'- {line}')
     if weekly_anchor_lines:
         out.append('\n## 本周锚点\n')
         for line in weekly_anchor_lines:
@@ -556,7 +764,7 @@ def weekly_top_goals(text: str) -> list[str]:
         if in_table and stripped.startswith('|') and not stripped.startswith('| ---'):
             parts = [p.strip() for p in stripped.strip('|').split('|')]
             if len(parts) >= 3 and parts[0] != 'Priority':
-                goal = parts[2]
+                goal = clean_md(parts[2])
                 if goal and meaningful(goal):
                     goals.append(f'{parts[0]} {goal}')
     return goals[:4]
@@ -567,7 +775,7 @@ def weekly_hras(text: str) -> list[str]:
     for line in section_lines(text, ['## High-Return Activities']):
         if line.startswith('- Activity '):
             _, right = line.split(':', 1)
-            value = right.strip()
+            value = clean_md(right.strip())
             if meaningful(value):
                 items.append(value)
     return items[:3]
@@ -590,30 +798,56 @@ def main() -> None:
 
     today_text = read_text(today_path)
     yesterday_text = read_text(yesterday_path)
+    monthly_path, monthly_source = current_month_monthly_plan(today)
+    monthly_text = read_text(monthly_path) if monthly_path else ''
+    role_path, role_source = current_month_role_file(today)
+    role_text = read_text(role_path) if role_path else ''
     weekly_path = latest_weekly_plan(PRIMARY_MEMORY_DIR) or latest_weekly_plan(FALLBACK_MEMORY_DIR)
     weekly_text = read_text(weekly_path) if weekly_path else ''
     weekly_source = 'workspace-azai/memory' if weekly_path and str(weekly_path).startswith(str(PRIMARY_MEMORY_DIR)) else ('workspace-main/memory (fallback)' if weekly_path else 'weekly plan missing')
 
     biggest_progress = extract_progress(yesterday_text)
     unfinished = extract_unfinished(yesterday_text)
-    tomorrow_first_move = extract_tomorrow_first_move(yesterday_text)
+    tomorrow_first_move = clean_md(extract_tomorrow_first_move(yesterday_text))
 
+    monthly_goals = monthly_top_goals(monthly_text) or monthly_company_focus_goals(monthly_text)
+    monthly_hras_items = monthly_hras(monthly_text)
+    monthly_role_focus = normalize_role_name(role_focus_from_current_month(role_text))
+    monthly_role_goals = role_key_goals(role_text, monthly_role_focus)
     weekly_goals = weekly_top_goals(weekly_text)
     weekly_hras_items = weekly_hras(weekly_text)
     weekly_role = weekly_role_focus(weekly_text)
-    if not meaningful(tomorrow_first_move):
-        tomorrow_first_move = unfinished[0] if unfinished else (weekly_goals[0] if weekly_goals else '待从昨天复盘补充')
+    if not meaningful(tomorrow_first_move) or is_operational_first_move(tomorrow_first_move):
+        fallback_goal = first_meaningful(monthly_goals + monthly_role_goals + weekly_goals)
+        tomorrow_first_move = unfinished[0] if unfinished else (fallback_goal or '待从昨天复盘补充')
 
+    exploded_monthly_goals = explode_compound_items(monthly_goals)
+    exploded_role_goals = explode_compound_items(monthly_role_goals)
     exploded_weekly_goals = explode_compound_items(weekly_goals)
     combined_inputs = explode_compound_items(unfinished)
+    for item in exploded_monthly_goals:
+        if item not in combined_inputs:
+            combined_inputs.append(item)
+    for item in exploded_role_goals:
+        if item not in combined_inputs:
+            combined_inputs.append(item)
     for item in exploded_weekly_goals:
+        if item not in combined_inputs:
+            combined_inputs.append(item)
+    for item in monthly_hras_items:
         if item not in combined_inputs:
             combined_inputs.append(item)
     for item in weekly_hras_items:
         if item not in combined_inputs:
             combined_inputs.append(item)
 
-    a_seed = dedupe_keep_order(([tomorrow_first_move] if meaningful(tomorrow_first_move) else []) + exploded_weekly_goals + explode_compound_items(unfinished))[:3]
+    a_seed = dedupe_keep_order(
+        ([tomorrow_first_move] if meaningful(tomorrow_first_move) else [])
+        + exploded_monthly_goals
+        + exploded_role_goals
+        + exploded_weekly_goals
+        + explode_compound_items(unfinished)
+    )[:3]
     a, b, c, d = classify(combined_inputs, primary_items=a_seed)
     schedule = today_schedule(today_text)
     schedule_source = today_source
@@ -625,14 +859,16 @@ def main() -> None:
         carry = ['- 昨晚未回填未完成事项，建议开工前先确认哪些需要继续、延后、授权或删除。']
 
     a_items = a_seed or (a if a else ['待你补充今天最重要的 1-2 个关键结果'])
-    c_seed = build_followups(a_items, weekly_goals, weekly_hras_items)
+    goal_pool = monthly_goals + monthly_role_goals + weekly_goals
+    hra_pool = monthly_hras_items + weekly_hras_items
+    c_seed = build_followups(a_items, goal_pool, hra_pool)
     if c:
         for item in c:
             if item not in c_seed:
                 c_seed.append(item)
     c_items = c_seed[:3] if c_seed else ['待补充今日需要联络或跟进的人与事项']
     d_items = d or ['待补充今天的会议 / 讨论 / 协调事项']
-    b_items = build_urgent_items(a_items, unfinished, weekly_goals, c_items, d_items) or ['待补充今天必须处理的紧急事项']
+    b_items = build_urgent_items(a_items, unfinished, goal_pool, c_items, d_items) or ['待补充今天必须处理的紧急事项']
 
     calendar_events, calendar_source = query_calendar_events(today)
 
@@ -651,6 +887,11 @@ def main() -> None:
         unfinished,
         tomorrow_first_move,
         carry,
+        monthly_source,
+        monthly_goals,
+        monthly_hras_items,
+        monthly_role_focus,
+        monthly_role_goals,
         weekly_source,
         weekly_role,
         weekly_goals,
