@@ -10,8 +10,8 @@ from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-DEFAULT_PRIMARY_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-azai/memory')
-DEFAULT_FALLBACK_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-main/memory')
+DEFAULT_PRIMARY_MEMORY_DIR = Path.home() / '.openclaw' / 'workspace-azai' / 'memory'
+DEFAULT_FALLBACK_MEMORY_DIR = Path.home() / '.openclaw' / 'workspace-main' / 'memory'
 INBOX_PLACEHOLDER = '当前没有待处理 Inbox 项'
 INBOX_DECISIONS = {'tomorrow', 'this_week', 'project_fact_candidate', 'discard'}
 INBOX_WORKING_TITLE = '# LMI Inbox'

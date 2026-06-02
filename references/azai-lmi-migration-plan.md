@@ -50,11 +50,11 @@ This plan avoids a risky "big bang" cutover.
 
 Primary LMI memory location:
 
-- `/Users/woohuaca/.openclaw/workspace-azai/memory`
+- `$HOME/.openclaw/workspace-azai/memory`
 
 Historical source during migration:
 
-- `/Users/woohuaca/.openclaw/workspace-main/memory`
+- `$HOME/.openclaw/workspace-main/memory`
 
 ### Cron Ownership
 

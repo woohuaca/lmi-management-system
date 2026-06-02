@@ -17,14 +17,14 @@ def env_flag(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
-PRIMARY_MEMORY_DIR = Path(os.environ.get('LMI_PRIMARY_MEMORY_DIR', '/Users/woohuaca/.openclaw/workspace-azai/memory')).expanduser()
+PRIMARY_MEMORY_DIR = Path(os.environ.get('LMI_PRIMARY_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-azai' / 'memory'))).expanduser()
 ALLOW_MAIN_MEMORY_FALLBACK = env_flag('LMI_ALLOW_MAIN_MEMORY_FALLBACK', False)
 FALLBACK_MEMORY_DIR = (
-    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', '/Users/woohuaca/.openclaw/workspace-main/memory')).expanduser()
+    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-main' / 'memory'))).expanduser()
     if ALLOW_MAIN_MEMORY_FALLBACK
     else None
 )
-AZAI_SESSION_DIR = Path(os.environ.get('LMI_AZAI_SESSION_DIR', '/Users/woohuaca/.openclaw/agents/azai/sessions')).expanduser()
+AZAI_SESSION_DIR = Path(os.environ.get('LMI_AZAI_SESSION_DIR', str(Path.home() / '.openclaw' / 'agents' / 'azai' / 'sessions'))).expanduser()
 PLACEHOLDER_MARKERS = ('待补充', '待今晚', '待确认')
 GUIDANCE_MARKERS = ('当前无明确', '当前无固定', '建议开工前', '建议先补', '请至少补', '请补 1')
 

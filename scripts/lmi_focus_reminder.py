@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import shutil
+import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -21,13 +22,14 @@ from lmi_execution_support import (
     save_json,
 )
 
-DEFAULT_FEISHU_TARGET = 'ou_04eadea6992a4400a8b7b151fdb101ee'
-DEFAULT_FEISHU_ACCOUNT = '1'
+DEFAULT_FEISHU_TARGET = os.environ.get('LMI_FEISHU_TARGET', '')
+DEFAULT_FEISHU_ACCOUNT = os.environ.get('LMI_FEISHU_ACCOUNT', '1')
 DEFAULT_OPENCLAW_BIN = (
-    shutil.which('openclaw')
-    or '/Users/woohuaca/.local/share/fnm/node-versions/v22.22.0/installation/bin/openclaw'
+    os.environ.get('LMI_OPENCLAW_BIN')
+    or shutil.which('openclaw')
+    or 'openclaw'
 )
-REPO_DIR = Path('/Users/woohuaca/Documents/New project/lmi-management-system')
+REPO_DIR = Path(__file__).resolve().parents[1]
 DAILY_GENERATOR = REPO_DIR / 'scripts' / 'generate_lmi_daily.py'
 
 
@@ -402,6 +404,9 @@ def maybe_send_focus_end_reminders(memory_dir: Path, target: str, account: str, 
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+    if not args.dry_run and not args.target:
+        print('Missing Feishu target. Set LMI_FEISHU_TARGET or pass --target.', file=sys.stderr)
+        raise SystemExit(2)
     memory_dir = Path(args.memory_dir).expanduser()
     state = load_state(memory_dir)
     pre = maybe_send_prestart_reminders(memory_dir, args.target, args.account, args.openclaw_bin, args.dry_run, state)

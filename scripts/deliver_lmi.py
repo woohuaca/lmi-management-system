@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-REPO_DIR = Path('/Users/woohuaca/Documents/New project/lmi-management-system')
-TARGET = 'ou_04eadea6992a4400a8b7b151fdb101ee'
-ACCOUNT_ID = '1'
+REPO_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_TARGET = os.environ.get('LMI_FEISHU_TARGET', '')
+DEFAULT_ACCOUNT_ID = os.environ.get('LMI_FEISHU_ACCOUNT', '1')
+DEFAULT_OPENCLAW_BIN = os.environ.get('LMI_OPENCLAW_BIN') or shutil.which('openclaw') or 'openclaw'
 
 SCRIPTS = {
     'daily': REPO_DIR / 'scripts/generate_lmi_daily.py',
@@ -15,6 +19,16 @@ SCRIPTS = {
     'weekly-plan': REPO_DIR / 'scripts/generate_lmi_weekly_plan.py',
     'weekly-review': REPO_DIR / 'scripts/generate_lmi_weekly_review.py',
 }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description='Generate and optionally deliver an LMI update through OpenClaw / Feishu.')
+    parser.add_argument('kind', nargs='?', default='daily', choices=sorted(SCRIPTS))
+    parser.add_argument('--target', default=DEFAULT_TARGET, help='Feishu target. Defaults to LMI_FEISHU_TARGET.')
+    parser.add_argument('--account', default=DEFAULT_ACCOUNT_ID, help='Feishu account id. Defaults to LMI_FEISHU_ACCOUNT or 1.')
+    parser.add_argument('--openclaw-bin', default=DEFAULT_OPENCLAW_BIN, help='OpenClaw executable path.')
+    parser.add_argument('--dry-run', action='store_true', help='Print generated output without sending it.')
+    return parser
 
 
 def run_generator(kind: str) -> tuple[int, str]:
@@ -38,18 +52,20 @@ def run_generator(kind: str) -> tuple[int, str]:
     return 0, output
 
 
-def send_to_azai(message: str) -> tuple[int, str]:
+def send_to_azai(message: str, *, target: str, account: str, openclaw_bin: str) -> tuple[int, str]:
+    if not target:
+        return 2, 'Missing Feishu target. Set LMI_FEISHU_TARGET or pass --target.'
     result = subprocess.run(
         [
-            'openclaw',
+            openclaw_bin,
             'message',
             'send',
             '--channel',
             'feishu',
             '--account',
-            ACCOUNT_ID,
+            account,
             '--target',
-            TARGET,
+            target,
             '--message',
             message,
             '--json',
@@ -64,16 +80,18 @@ def send_to_azai(message: str) -> tuple[int, str]:
 
 
 def main() -> int:
-    kind = sys.argv[1] if len(sys.argv) > 1 else 'daily'
-    code, output = run_generator(kind)
+    args = build_parser().parse_args()
+    code, output = run_generator(args.kind)
     print(output)
     if code != 0:
         return code
-    send_code, send_details = send_to_azai(output)
+    if args.dry_run:
+        return 0
+    send_code, send_details = send_to_azai(output, target=args.target, account=args.account, openclaw_bin=args.openclaw_bin)
     if send_code != 0:
         print(f'\n[delivery failed]\n{send_details}', file=sys.stderr)
         return send_code
-    print(f'\n[delivered to azai via Feishu account {ACCOUNT_ID}]', file=sys.stderr)
+    print(f'\n[delivered to azai via Feishu account {args.account}]', file=sys.stderr)
     return 0
 
 

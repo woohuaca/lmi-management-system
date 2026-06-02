@@ -1,7 +1,7 @@
 {
   "phase": "phase-1-copy-only",
-  "source_root": "/Users/woohuaca/.openclaw/workspace-main/memory",
-  "target_root": "/Users/woohuaca/.openclaw/workspace-azai/memory",
+  "source_root": "$HOME/.openclaw/workspace-main/memory",
+  "target_root": "$HOME/.openclaw/workspace-azai/memory",
   "files": [
     {
       "relative_path": "2026-03-18.md",

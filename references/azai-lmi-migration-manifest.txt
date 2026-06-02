@@ -1,7 +1,7 @@
 # First-wave LMI migration manifest
 
-Source root: /Users/woohuaca/.openclaw/workspace-main/memory
-Target root: /Users/woohuaca/.openclaw/workspace-azai/memory
+Source root: $HOME/.openclaw/workspace-main/memory
+Target root: $HOME/.openclaw/workspace-azai/memory
 
 OK  2026-03-18.md
 OK  2026-03-20.md

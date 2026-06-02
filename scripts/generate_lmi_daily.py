@@ -18,10 +18,10 @@ def env_flag(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
-PRIMARY_MEMORY_DIR = Path(os.environ.get('LMI_PRIMARY_MEMORY_DIR', '/Users/woohuaca/.openclaw/workspace-azai/memory')).expanduser()
+PRIMARY_MEMORY_DIR = Path(os.environ.get('LMI_PRIMARY_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-azai' / 'memory'))).expanduser()
 ALLOW_MAIN_MEMORY_FALLBACK = env_flag('LMI_ALLOW_MAIN_MEMORY_FALLBACK', False)
 FALLBACK_MEMORY_DIR = (
-    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', '/Users/woohuaca/.openclaw/workspace-main/memory')).expanduser()
+    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-main' / 'memory'))).expanduser()
     if ALLOW_MAIN_MEMORY_FALLBACK
     else None
 )

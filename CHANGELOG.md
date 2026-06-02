@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-02 v1.1.1
+
+### Improved
+
+- GitHub-facing README and release notes are now written in Chinese for easier public review and onboarding
+- repository privacy guidance now clearly states that Feishu targets, runtime memory, tokens, and account-specific values should be provided through environment variables or CLI arguments
+- optional delivery and reminder scripts now avoid hard-coded Feishu targets and local repository paths
+- default memory paths now use `$HOME`-based paths instead of publishing a machine-specific user path
+
+### Fixed
+
+- removed a previously hard-coded Feishu target identifier from the latest source
+- removed machine-specific `/Users/...` paths from the latest source and public docs
+
 ## 2026-06-02
 
 ### Added

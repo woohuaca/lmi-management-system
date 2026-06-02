@@ -9,12 +9,12 @@ This repository is the source-of-truth copy of the `lmi-management-system` skill
 - Method references live in `references/`.
 - Output templates live in `assets/templates/`.
 - Operational generators and delivery helpers live in `scripts/`.
-- Runtime memory is outside this repo, normally under `/Users/woohuaca/.openclaw/workspace-azai/memory`.
+- Runtime memory is outside this repo, normally under `$HOME/.openclaw/workspace-azai/memory`.
 
 ## Source Of Truth
 
 - Treat this repo as the editable source.
-- Do not directly edit `/Users/woohuaca/.openclaw/skills/lmi-management-system` or `/Users/woohuaca/.codex/skills/lmi-management-system` unless the user explicitly asks for an installed-copy hotfix.
+- Do not directly edit `$HOME/.openclaw/skills/lmi-management-system` or `$HOME/.codex/skills/lmi-management-system` unless the user explicitly asks for an installed-copy hotfix.
 - After repo changes, run `bash scripts/check-sync.sh` to see whether installed copies drift from source.
 - If syncing installed copies is needed, tell the user exactly what will be copied before doing it.
 

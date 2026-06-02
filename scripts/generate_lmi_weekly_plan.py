@@ -6,7 +6,7 @@ import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-PRIMARY_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-azai/memory')
+PRIMARY_MEMORY_DIR = Path(os.environ.get('LMI_PRIMARY_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-azai' / 'memory'))).expanduser()
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -18,7 +18,7 @@ def env_flag(name: str, default: bool = False) -> bool:
 
 ALLOW_MAIN_MEMORY_FALLBACK = env_flag('LMI_ALLOW_MAIN_MEMORY_FALLBACK', False)
 FALLBACK_MEMORY_DIR = (
-    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', '/Users/woohuaca/.openclaw/workspace-main/memory')).expanduser()
+    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-main' / 'memory'))).expanduser()
     if ALLOW_MAIN_MEMORY_FALLBACK
     else None
 )
