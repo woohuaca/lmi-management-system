@@ -567,8 +567,8 @@ def weekly_milestones_from_monthly(text: str, monday: date, friday: date) -> lis
 def infer_role_for_goal(goal: str, weighted_roles: list[tuple[str, int]]) -> str:
     clean = clean_md(goal)
     rules = [
-        (['客户', '漏斗', '装备制造', '轨道交通', '市场'], '新机会发现者'),
-        (['charter', 'skill', 'pic'], 'CDT项目管理者'),
+        (['客户', '漏斗', '行业场景', '市场'], '新机会发现者'),
+        (['charter', 'skill', 'pic'], '项目管理者'),
         (['prd', '需求', '原型', '设计'], '产品概念定义'),
         (['验证', 'poc', '价值'], '概念价值验证'),
     ]

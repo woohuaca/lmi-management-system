@@ -60,15 +60,15 @@ STREAM_RULES = [
         'bucket': 'a',
     },
     {
-        'key': 'service_festival',
-        'patterns': ['江西客户服务节', '客户服务节'],
-        'canonical': '江西客户服务节价值验证',
+        'key': 'customer_event',
+        'patterns': ['客户活动', '现场活动', '客户价值验证'],
+        'canonical': '客户活动价值验证',
         'bucket': 'a',
     },
     {
         'key': 'customer_pipeline',
-        'patterns': ['8个意向客户', '意向客户', '转化漏斗', '客户转化', '下一阶段', '系统跟进'],
-        'canonical': '8个意向客户推进，明确各客户下一阶段动作',
+        'patterns': ['重点意向客户', '意向客户', '转化漏斗', '客户转化', '下一阶段', '系统跟进'],
+        'canonical': '重点意向客户推进，明确各客户下一阶段动作',
         'bucket': 'c',
     },
 ]
@@ -978,7 +978,7 @@ def ensure_closeout_block(schedule: list[str], primary_result: str) -> list[str]
     day_end = 18 * 60
     if day_end - last_end < 20:
         return schedule
-    if '客户服务节' in primary_result:
+    if '客户活动' in primary_result:
         close_label = '现场收口 -> 整理客户洞察与后续动作'
     else:
         close_label = f'收工整理 -> 收口 {primary_result} 的结果与下一步'
@@ -1006,8 +1006,8 @@ def build_followups(a_items: list[str], weekly_goals: list[str], weekly_hras_ite
         clean = strip_priority_prefix(raw)
         if not meaningful(clean):
             continue
-        if '客户A进度对齐会' in clean or ('对齐会' in clean and '客户' in clean):
-            items.append('确认客户A进度对齐会的安排、结论与下一步')
+        if '重点客户进度对齐会' in clean or ('对齐会' in clean and '客户' in clean):
+            items.append('确认重点客户进度对齐会的安排、结论与下一步')
         elif '客户' in clean or '跟进' in clean:
             has_customer_pipeline = True
             continue
@@ -1026,7 +1026,7 @@ def build_followups(a_items: list[str], weekly_goals: list[str], weekly_hras_ite
         elif '版本更新方向确定' in clean:
             items.append('对齐Charter版本更新方向，并确认责任人与时点')
     if has_customer_pipeline:
-        items.insert(0, '推进8个意向客户跟进，推动50%进入下一阶段')
+        items.insert(0, '推进重点意向客户跟进，推动进入下一阶段')
     return dedupe_keep_order(items)[:3]
 
 

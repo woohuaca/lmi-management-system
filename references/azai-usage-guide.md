@@ -49,7 +49,7 @@ These prompts help `azai` use the new execution-layer workflow more naturally.
 ### Quick Inbox Capture
 
 - `收进 Inbox：我想到一个客户洞察模板，月底再决定要不要升级`
-- `把这个先放 Inbox，不要进今天计划：和忆雪约原型评审`
+- `把这个先放 Inbox，不要进今天计划：和同事A约原型评审`
 - `先做日复盘，再清 Inbox`
 - `今晚顺手清 Inbox，帮我判断哪些进明天、哪些留在本周`
 

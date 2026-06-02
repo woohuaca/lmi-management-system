@@ -115,7 +115,7 @@ These should remain in `main` unless explicitly reclassified:
 
 Examples to keep out of first-wave migration:
 
-- `项目事实/制造业日报_*.md`
+- `项目事实/行业日报_*.md`
 - `长期偏好/2026-03-13_家庭规则.md`
 
 ## Low-Risk Migration Phases

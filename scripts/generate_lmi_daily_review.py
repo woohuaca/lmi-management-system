@@ -348,7 +348,7 @@ def is_admin_schedule_task(task: str) -> bool:
 
 
 def is_event_validation_day(text: str, top: str) -> bool:
-    if '客户服务节' in top:
+    if '客户活动' in top:
         return True
     rows = schedule_rows(text)
     active_rows = [row for row in rows if not is_admin_schedule_task(row['task'])]
@@ -357,7 +357,7 @@ def is_event_validation_day(text: str, top: str) -> bool:
     total_active = sum(row['minutes'] for row in active_rows)
     longest = max((row['minutes'] for row in active_rows), default=0)
     joined_tasks = ' '.join(row['task'] for row in active_rows)
-    return total_active >= 300 and longest >= 180 and any(keyword in joined_tasks for keyword in ['客户服务节', '现场', '拜访', '活动'])
+    return total_active >= 300 and longest >= 180 and any(keyword in joined_tasks for keyword in ['客户活动', '现场', '拜访', '活动'])
 
 def update_daily_file(path: Path, biggest_progress: str, main_interruption: str, work_experience: str, tomorrow_first_move: str, unfinished: list[str]) -> None:
     text = read_text(path)

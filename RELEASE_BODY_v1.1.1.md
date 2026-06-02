@@ -17,7 +17,7 @@
 
 - 未发现 GitHub token、OpenAI key、AWS key、Bearer token 等常见密钥模式
 - 未发现真实 Feishu `open_id` 常量
-- 未发现机器特定的 `/Users/woohuaca/...` 路径
+- 未发现机器特定用户路径
 - 未发布真实工作 memory 文件
 
 注意：旧提交历史和旧 Release 源码归档中曾包含本机路径和一个 Feishu 目标标识。`v1.1.1` 已在最新发布中移除这些内容；如果需要从整个 Git 历史中彻底删除，需要单独执行 history rewrite、删除/重建旧 Release，并轮换相关 Feishu 目标。

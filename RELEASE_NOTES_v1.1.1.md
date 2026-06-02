@@ -25,7 +25,7 @@ export LMI_FEISHU_ACCOUNT="1"
 
 本次发布前检查了最新源码中的常见风险模式：
 
-- `/Users/woohuaca`
+- 机器特定用户路径
 - 具体 Feishu `open_id`
 - GitHub token
 - OpenAI API key

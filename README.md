@@ -168,7 +168,7 @@ lmi-management-system/
 ├── SKILL.md
 ├── README.md
 ├── CHANGELOG.md
-├── RELEASE_NOTES_v1.1.1.md
+├── RELEASE_NOTES_v1.1.2.md
 ├── AGENTS.md
 ├── agents/
 │   └── openai.yaml
@@ -183,7 +183,7 @@ lmi-management-system/
 - [SKILL.md](SKILL.md)：Skill 触发、路由和工作规则
 - [AGENTS.md](AGENTS.md)：维护该项目时给 Agent 的工程规则
 - [CHANGELOG.md](CHANGELOG.md)：版本更新记录
-- [RELEASE_NOTES_v1.1.1.md](RELEASE_NOTES_v1.1.1.md)：最新发布说明
+- [RELEASE_NOTES_v1.1.2.md](RELEASE_NOTES_v1.1.2.md)：最新发布说明
 - [references/inbox-focus-design.md](references/inbox-focus-design.md)：Inbox / Focus 设计说明
 - [references/storage-system.md](references/storage-system.md)：存储系统建议
 - [references/openclaw-execution-playbook.md](references/openclaw-execution-playbook.md)：OpenClaw 协同执行指南

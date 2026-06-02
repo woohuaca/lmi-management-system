@@ -86,8 +86,8 @@ The user should be able to say things like:
 
 - `收进 Inbox：我想到一个客户洞察模板`
 - `记个想法：AI 周报以后想分成 3 个层级`
-- `记一下：需要和忆雪约原型评审`
-- `这个先放 Inbox：EBG 版本价值表达有偏差`
+- `记一下：需要和同事A约原型评审`
+- `这个先放 Inbox：某版本价值表达有偏差`
 
 ### Inbox Categories
 
@@ -155,8 +155,8 @@ Suggested sections inside `memory/inbox.md`:
 ## Unprocessed
 
 - [inbox-2026-05-07-001][idea][新机会发现者][weekly] 想到一个客户洞察模板，便于销售前置筛选
-- [inbox-2026-05-07-002][todo][产品概念定义][daily] 和忆雪确认原型评审时间
-- [inbox-2026-05-07-003][insight][CDT项目管理者][weekly] EBG 版本价值表达偏差不只是文案问题
+- [inbox-2026-05-07-002][todo][产品概念定义][daily] 和同事A确认原型评审时间
+- [inbox-2026-05-07-003][insight][项目管理者][weekly] 某版本价值表达偏差不只是文案问题
 
 ## Decided
 
@@ -281,7 +281,7 @@ Example:
   "minutes": 70,
   "task": "产出完整的SKILL.md + 使用指南",
   "task_class": "A",
-  "role": "CDT项目管理者",
+  "role": "项目管理者",
   "linked_week_goal": "产出完整的SKILL.md + 使用指南",
   "linked_month_goal": "产出完整的SKILL.md + 使用指南",
   "is_high_return_activity": true,
@@ -311,7 +311,7 @@ Suggested format inside a monthly log:
 
 ## 2026-05-07
 
-- [focus-2026-05-07-001] 08:50-10:00 | 70 min | A | CDT项目管理者 | 产出完整的SKILL.md + 使用指南 | completed | score 4
+- [focus-2026-05-07-001] 08:50-10:00 | 70 min | A | 项目管理者 | 产出完整的SKILL.md + 使用指南 | completed | score 4
   - result: 完成结构初稿和操作步骤大纲
   - interruption: none
 ```
@@ -321,7 +321,7 @@ Suggested format inside a monthly log:
 Daily plan should support commands like:
 
 - `开始 A1 的 50 分钟专注`
-- `开始 90 分钟深度块，任务是装备制造调研`
+- `开始 90 分钟深度块，任务是行业场景调研`
 - `结束这轮专注，记录结果`
 
 The daily plan output should eventually include:
@@ -389,7 +389,7 @@ Key metrics:
 ### Focus
 
 - `开始 A1 的 50 分钟专注`
-- `开始 90 分钟深度块，任务是装备制造调研`
+- `开始 90 分钟深度块，任务是行业场景调研`
 - `结束本轮专注，记录结果`
 - `今天按角色看，我的专注时间投在哪里了？`
 - `这周哪个角色拿到了最多深度时间？`

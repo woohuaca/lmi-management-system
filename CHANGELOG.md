@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-06-02 v1.1.2
+
+### Fixed
+
+- anonymized example person names, internal role labels, and organization-style acronyms in public references
+- replaced domain-specific customer event and industry examples with generic customer-activity and industry-scenario wording
+- removed concrete customer-count phrasing from generator fallback text
+
 ## 2026-06-02 v1.1.1
 
 ### Improved
@@ -12,7 +20,7 @@
 ### Fixed
 
 - removed a previously hard-coded Feishu target identifier from the latest source
-- removed machine-specific `/Users/...` paths from the latest source and public docs
+- removed machine-specific local absolute paths from the latest source and public docs
 
 ## 2026-06-02
 
