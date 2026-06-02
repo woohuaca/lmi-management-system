@@ -27,6 +27,11 @@ copy_normalized() {
     --exclude '.git' \
     --exclude '.clawhub' \
     --exclude '_meta.json' \
+    --exclude '.DS_Store' \
+    --exclude '__pycache__' \
+    --exclude '*.pyc' \
+    --exclude '*.log' \
+    --exclude 'vibecoding-lmi-time-management-blog-draft.md' \
     "$src/" "$dst/"
 }
 

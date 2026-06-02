@@ -149,6 +149,78 @@ These prompts are good first tests:
 - `按 LMI 时间图像帮我设计理想的一周时间分配`
 - `用 LMI 个人生产力摘要表分析我这周的时间投入`
 
+## Execution Add-ons
+
+This repository now includes three lightweight execution-layer add-ons:
+
+1. `Inbox`
+   - GTD-style capture buffer for ideas, interruptions, risks, and follow-ups
+2. `Focus Log`
+   - start / end based focus-session log for A-item execution and later role-based time review
+3. `Focus Reminder`
+   - 2-minute pre-start reminders for scheduled `A` work and key `B` work, plus reply-driven focus support
+
+Suggested storage:
+
+```text
+memory/
+├── inbox.md
+├── inbox-capture/
+│   └── YYYY-MM-DD.md
+├── inbox-archive/
+│   └── YYYY-MM-inbox-archive.md
+├── 本周待跟进输入.md
+├── 项目事实/
+│   └── Inbox-项目事实候选.md
+└── focus-log/
+    └── YYYY-MM-focus-log.md
+```
+
+Helpful scripts:
+
+- `scripts/lmi_capture_inbox.py`
+- `scripts/lmi_clean_inbox.py`
+- `scripts/lmi_rebuild_inbox.py`
+- `scripts/lmi_focus_session.py`
+- `scripts/lmi_focus_reply_router.py`
+- `scripts/lmi_focus_reminder.py`
+- `scripts/install_focus_reminder_launch_agent.sh`
+
+Examples:
+
+```bash
+python3 scripts/lmi_capture_inbox.py "想到一个客户洞察模板，便于销售前置筛选" --kind idea --role 新机会发现者 --horizon weekly
+
+python3 scripts/lmi_clean_inbox.py
+
+python3 scripts/lmi_clean_inbox.py --decision inbox-2026-05-20-001=tomorrow --decision inbox-2026-05-20-002=project_fact_candidate
+
+python3 scripts/lmi_rebuild_inbox.py
+
+python3 scripts/lmi_focus_session.py start --task "完成深度调研报告第一版框架" --task-class A --role 新机会发现者 --minutes 50 --high-return
+
+python3 scripts/lmi_focus_session.py end --result "完成调研报告第一版框架与目录" --focus-score 4
+
+python3 scripts/lmi_focus_reminder.py --dry-run
+
+zsh scripts/install_focus_reminder_launch_agent.sh
+```
+
+Reply-driven focus flow:
+
+- when a key scheduled item is 2 minutes away, `Focus Reminder` can send a prompt
+- reply `开始` or `开始专注`, and the router will first ask how many pomodoros you want: `1 / 2 / 3`
+- after you choose, the router starts a protected focus block and gives a short environment-reset prompt
+- use whole pomodoros only for now; do not use fractional values like `2.5`
+- when the focus block ends, reply `完成：结果` or `中断：原因`, or choose `继续1个 / 继续2个 / 收口`
+- the result is written back into the monthly focus log and later used in daily / weekly review
+
+Inbox flow:
+
+- daytime: capture into `Inbox`
+- evening daily review: clean `Inbox` into `进明天 / 留在本周 / 转项目事实候选 / 丢弃`
+- next morning: build the day plan from the decided carryover first, then reread any remaining unprocessed Inbox items
+
 ## Example Output
 
 Here is a short example of the kind of structured output this skill is meant to produce.
@@ -211,7 +283,12 @@ lmi-management-system/
 │   └── templates/
 ├── references/
 └── scripts/
-    └── check-sync.sh
+    ├── check-sync.sh
+    ├── lmi_capture_inbox.py
+    ├── lmi_execution_support.py
+    ├── lmi_focus_reminder.py
+    ├── lmi_focus_reply_router.py
+    └── lmi_focus_session.py
 ```
 
 ### Important Files
@@ -221,6 +298,11 @@ lmi-management-system/
 - `assets/templates/`: reusable planning and review templates
 - `references/`: methodology, storage, review, and execution guidance
 - `scripts/check-sync.sh`: checks whether source, OpenClaw, and Codex copies are still in sync
+- `scripts/lmi_capture_inbox.py`: capture ideas and interruptions into inbox
+- `scripts/lmi_focus_reminder.py`: send 2-minute key-task reminders and pomodoro end reminders
+- `scripts/lmi_focus_reply_router.py`: turn short Feishu replies into focus start / end records
+- `scripts/install_focus_reminder_launch_agent.sh`: install a local macOS LaunchAgent to run reminder checks every minute
+- `scripts/lmi_focus_session.py`: start and end focus sessions for later analysis
 
 ## Main Files To Read
 
@@ -231,6 +313,7 @@ lmi-management-system/
 - [references/openclaw-execution-playbook.md](references/openclaw-execution-playbook.md)
 - [references/review-system.md](references/review-system.md)
 - [references/azai-usage-guide.md](references/azai-usage-guide.md)
+- [references/inbox-focus-design.md](references/inbox-focus-design.md)
 
 ## Current Status
 

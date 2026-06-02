@@ -128,6 +128,9 @@ Expected behavior:
 - import from yesterday's review and unfinished items
 - prefer `workspace-azai/memory`
 - show missing inputs honestly instead of inventing facts
+- do not send a raw file dump as the final Feishu reply unless the user explicitly asked for the file body
+- for manual `今日计划` requests, the session should show an actual call to `scripts/generate_lmi_daily.py`
+- if that script was launched via `exec` and returned `Command still running`, the session must also show follow-up `process poll` (or equivalent) until completion; otherwise the run is incomplete even if the tool technically started
 
 ### Daily review
 
@@ -170,7 +173,7 @@ After any LMI memory migration, verify:
 
 - `workspace-azai/memory` contains the active LMI files
 - scripts prefer `workspace-azai/memory`
-- fallback to `workspace-main/memory` is temporary and intentional
+- fallback to `workspace-main/memory` is opt-in recovery only, not the default path
 - current day files exist when testing import-forward behavior
 
 Common false alarm:
@@ -209,4 +212,3 @@ Do not say "fixed" until all of the following are true:
   - daily / weekly / monthly / role workflow
 - `workspace-azai/memory`
   - primary LMI memory home
-
