@@ -2,16 +2,18 @@
 
 set -euo pipefail
 
-SOURCE_DIR="/Users/woohuaca/Documents/New project/lmi-management-system"
-OPENCLAW_DIR="/Users/woohuaca/.openclaw/skills/lmi-management-system"
-CODEX_DIR="/Users/woohuaca/.codex/skills/lmi-management-system"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_DIR="${LMI_SOURCE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+OPENCLAW_GLOBAL_DIR="${LMI_OPENCLAW_GLOBAL_DIR:-$HOME/.openclaw/skills/lmi-management-system}"
+OPENCLAW_WORKSPACE_MAIN_DIR="${LMI_OPENCLAW_WORKSPACE_MAIN_DIR:-$HOME/.openclaw/workspace-main/skills/lmi-management-system}"
+OPENCLAW_WORKSPACE_AZAI_DIR="${LMI_OPENCLAW_WORKSPACE_AZAI_DIR:-$HOME/.openclaw/workspace-azai/skills/lmi-management-system}"
+CODEX_DIR="${LMI_CODEX_DIR:-$HOME/.codex/skills/lmi-management-system}"
 
-TMP_SOURCE="$(mktemp -d)"
-TMP_OPENCLAW="$(mktemp -d)"
-TMP_CODEX="$(mktemp -d)"
+TMP_ROOT="$(mktemp -d)"
+TMP_SOURCE="$TMP_ROOT/source"
 
 cleanup() {
-  rm -rf "$TMP_SOURCE" "$TMP_OPENCLAW" "$TMP_CODEX"
+  rm -rf "$TMP_ROOT"
 }
 trap cleanup EXIT
 
@@ -32,6 +34,8 @@ copy_normalized() {
     --exclude '*.pyc' \
     --exclude '*.log' \
     --exclude 'vibecoding-lmi-time-management-blog-draft.md' \
+    --exclude 'wechat-lmi-skill-article.md' \
+    --exclude 'blog-assets' \
     "$src/" "$dst/"
 }
 
@@ -45,19 +49,41 @@ compare_dirs() {
   else
     echo "[DIFF] $label has drift"
     diff -rq "$left" "$right" || true
+    return 1
   fi
 }
 
 copy_normalized "$SOURCE_DIR" "$TMP_SOURCE"
 
-if copy_normalized "$OPENCLAW_DIR" "$TMP_OPENCLAW"; then
-  compare_dirs "OpenClaw vs source" "$TMP_SOURCE" "$TMP_OPENCLAW"
-else
-  echo "[MISSING] OpenClaw install not found: $OPENCLAW_DIR"
-fi
+STATUS=0
 
-if copy_normalized "$CODEX_DIR" "$TMP_CODEX"; then
-  compare_dirs "Codex vs source" "$TMP_SOURCE" "$TMP_CODEX"
-else
-  echo "[MISSING] Codex install not found: $CODEX_DIR"
-fi
+LABELS=(
+  "OpenClaw global vs source"
+  "OpenClaw workspace-main vs source"
+  "OpenClaw workspace-azai vs source"
+  "Codex vs source"
+)
+
+DIRS=(
+  "$OPENCLAW_GLOBAL_DIR"
+  "$OPENCLAW_WORKSPACE_MAIN_DIR"
+  "$OPENCLAW_WORKSPACE_AZAI_DIR"
+  "$CODEX_DIR"
+)
+
+for i in "${!LABELS[@]}"; do
+  label="${LABELS[$i]}"
+  dir="${DIRS[$i]}"
+  tmp_target="$TMP_ROOT/target-$i"
+
+  if copy_normalized "$dir" "$tmp_target"; then
+    if ! compare_dirs "$label" "$TMP_SOURCE" "$tmp_target"; then
+      STATUS=1
+    fi
+  else
+    echo "[MISSING] $label not found: $dir"
+    STATUS=1
+  fi
+done
+
+exit "$STATUS"

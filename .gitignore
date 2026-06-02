@@ -10,6 +10,8 @@ Thumbs.db
 *.swp
 *.swo
 vibecoding-lmi-time-management-blog-draft.md
+wechat-lmi-skill-article.md
+blog-assets/
 
 # Python
 __pycache__/
