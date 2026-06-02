@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-06-02
+
+### Added
+
+- Agent maintenance guide in `AGENTS.md`, covering source-of-truth rules, sync discipline, validation commands, and safe editing boundaries
+- LMI Inbox and Focus execution layer for capturing incoming tasks, rebuilding and cleaning inbox memory, starting focus sessions, routing focus replies, and sending reminder nudges
+- reusable inbox/focus templates and a detailed execution-design reference for how daily work should flow from capture to focus to review
+- optional macOS LaunchAgent installer for focus reminders
+
+### Improved
+
+- daily, weekly, monthly, and role generators now read inbox/focus memory so plans and reviews reflect live execution context instead of only static planning files
+- weekly planning and weekly review templates now make inbox triage, focus evidence, and carry-forward work more explicit
+- README, SKILL instructions, and `azai` usage guidance now describe the Inbox/Focus workflow and the newer operating rhythm more clearly
+- sync checking now ignores generated caches, logs, and local blog drafts so source, OpenClaw, and Codex copies can be compared without false drift
+
+### Fixed
+
+- execution support source labels now respect custom memory directories instead of always reporting default-path context
+- local-only draft material is excluded from repository sync checks and Git tracking
+
 ## 2026-05-07
 
 ### Improved
