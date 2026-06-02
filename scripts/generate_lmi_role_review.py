@@ -1,12 +1,27 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 from datetime import date
 from pathlib import Path
 import re
 
 PRIMARY_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-azai/memory')
-FALLBACK_MEMORY_DIR = Path('/Users/woohuaca/.openclaw/workspace-main/memory')
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+ALLOW_MAIN_MEMORY_FALLBACK = env_flag('LMI_ALLOW_MAIN_MEMORY_FALLBACK', False)
+FALLBACK_MEMORY_DIR = (
+    Path(os.environ.get('LMI_FALLBACK_MEMORY_DIR', '/Users/woohuaca/.openclaw/workspace-main/memory')).expanduser()
+    if ALLOW_MAIN_MEMORY_FALLBACK
+    else None
+)
 
 
 def read_text(path: Path) -> str:
@@ -20,9 +35,10 @@ def resolve_memory_file(rel_path: str) -> tuple[Path, str]:
     primary = PRIMARY_MEMORY_DIR / rel_path
     if primary.exists():
         return primary, 'workspace-azai/memory'
-    fallback = FALLBACK_MEMORY_DIR / rel_path
-    if fallback.exists():
-        return fallback, 'workspace-main/memory (fallback)'
+    if FALLBACK_MEMORY_DIR is not None:
+        fallback = FALLBACK_MEMORY_DIR / rel_path
+        if fallback.exists():
+            return fallback, 'workspace-main/memory (fallback)'
     return primary, 'workspace-azai/memory (missing)'
 
 

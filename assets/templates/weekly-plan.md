@@ -1,15 +1,15 @@
-# Weekly Plan
+# 周计划
 
-## Weekly Snapshot
+## 周计划概览
 
-- Week theme:
-- Linked monthly priority:
-- Main linked role:
-- Weekly success definition:
+- 本周主题:
+- 关联月目标:
+- 本周主推进角色:
+- 本周成功定义:
 
-## Weekly Top Goals
+## 本周关键目标
 
-| Priority | Role | Weekly goal | Success definition | Target day | Notes |
+| 优先级 | 角色 | 本周目标 | 成功定义 | 截止日 | 备注 |
 | --- | --- | --- | --- | --- | --- |
 | A1 |  |  |  |  |  |
 | A2 |  |  |  |  |  |
@@ -17,93 +17,93 @@
 | B |  |  |  |  |  |
 | C |  |  |  |  |  |
 
-## Role Focus
+## 角色聚焦
 
-- Role to advance most this week:
-- Role that can accept lower attention this week:
-- Role that needs clearer boundary or delegation:
+- 本周主推进角色:
+- 本周可降低关注的角色:
+- 需要更清晰边界或授权的角色:
 
-## High-Return Activities
+## 高回报活动
 
-- Activity 1:
-  - linked goal:
-  - why it matters:
-- Activity 2:
-  - linked goal:
-  - why it matters:
-- Activity 3:
-  - linked goal:
-  - why it matters:
+- 活动1:
+  - 关联目标:
+  - 为什么重要:
+- 活动2:
+  - 关联目标:
+  - 为什么重要:
+- 活动3:
+  - 关联目标:
+  - 为什么重要:
 
-## A Important Items
+## A 类重要事项
 
-- Item:
-  - target day:
-- Item:
-  - target day:
+- 事项:
+  - 截止日:
+- 事项:
+  - 截止日:
 
-## B Urgent Items
+## B 类紧要事项
 
-- Item:
-  - target day:
-- Item:
-  - target day:
+- 事项:
+  - 截止日:
+- 事项:
+  - 截止日:
 
-## C Contact Or Follow-Up
+## C 类联络/跟进
 
-- Item:
-  - owner:
-  - target day:
-- Item:
-  - owner:
-  - target day:
+- 事项:
+  - 负责人:
+  - 截止日:
+- 事项:
+  - 负责人:
+  - 截止日:
 
-## D Meetings, Discussions, Or Coordination
+## D 类会议/讨论/协调
 
-- Item:
-  - target day:
-- Item:
-  - target day:
+- 事项:
+  - 截止日:
+- 事项:
+  - 截止日:
 
-## Delegation And Follow-Up
+## 授权与跟进
 
-- Must personally drive:
-- Delegate:
-- Follow up only:
+- 必须亲自推进:
+- 可以授权:
+- 重点跟进即可:
 
-## Management Rhythm
+## 管理节奏
 
-- One-on-one or team cadence:
-- Review or checkpoint:
-- Key coordination:
+- 例会或一对一节奏:
+- 复盘或检查点:
+- 关键协同:
 
-## Protected Time Blocks
+## 保护时间块
 
-- Block 1:
-  - linked goal:
-- Block 2:
-  - linked goal:
-- Block 3:
-  - linked goal:
+- 时间块1:
+  - 关联目标:
+- 时间块2:
+  - 关联目标:
+- 时间块3:
+  - 关联目标:
 
-## Experience To Validate
+## 需要验证的做法
 
-- Workflow or method to test this week:
-- Signal that will show it works:
+- 本周要验证的方法/流程:
+- 什么信号说明它有效:
 
-## Main Risk
+## 主要风险
 
-- Risk:
-- Mitigation:
+- 风险:
+- 应对:
 
-## Week-End Review Hooks
+## 周末复盘钩子
 
-- What must be true by Friday:
-- Likely unfinished item to delete instead of roll over:
-- Weekly question to answer in review:
+- 到周五必须成立的结果:
+- 更可能直接删除而不是滚动的事项:
+- 周复盘必须回答的问题:
 
-## Next 1-3 Moves
+## Next 1-3 Moves（接下来 1-3 步）
 
-- Move 1:
-- Move 2:
-- Move 3:
+- 动作1:
+- 动作2:
+- 动作3:

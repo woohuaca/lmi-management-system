@@ -1,15 +1,28 @@
-# Weekly Review
+# 周复盘
 
-## Weekly Snapshot
+## 周复盘概览
 
-- Review week:
-- Week theme:
-- Linked monthly priority:
-- Overall completion level:
+- 复盘周期:
+- 本周主题:
+- 关联月目标:
+- 整体完成度:
+- 复盘覆盖率:
 
-## Plan Vs Actual
+## 每日复盘摘录
 
-| Priority | Role | Planned goal | Actual result | Completion level | Variance reason |
+- 第 1 天:
+- 第 2 天:
+- 第 3 天:
+
+## 每日日工作亮点
+
+- 第 1 天:
+- 第 2 天:
+- 第 3 天:
+
+## 计划与实际对照
+
+| 优先级 | 角色 | 原计划目标 | 实际结果 | 完成度 | 偏差原因 |
 | --- | --- | --- | --- | --- | --- |
 | A1 |  |  |  |  |  |
 | A2 |  |  |  |  |  |
@@ -17,65 +30,72 @@
 | B |  |  |  |  |  |
 | C |  |  |  |  |  |
 
-## Role Review
+## 角色复盘
 
-- Best advanced role this week:
-- Most under-served role this week:
-- Role that consumed time but created weak return:
-- Role priority change for next week:
+- 本周推进最好的角色:
+- 本周投入不足的角色:
+- 投入较多但回报偏弱的角色:
+- 下周角色优先级调整:
 
-## High-Return Activity Review
+## Inbox 去向汇总
 
-- Most effective high-return activity:
-- Why it worked:
-- Under-invested high-return activity:
-- Low-return time spent:
-- What is worth repeating:
+- 本周转成明日执行:
+- 本周留在本周输入:
+- 本周转项目事实候选:
+- 本周丢弃 / 仅记录:
 
-## Root Cause Review
+## 高回报活动复盘
 
-- Target issue:
-- Execution issue:
-- Mechanism issue:
-- Strategic adjustment made this week:
+- 本周最有效的高回报活动:
+- 为什么有效:
+- 投入不足的高回报活动:
+- 低回报时间投入:
+- 值得重复的做法:
 
-## Lessons And Insights
+## 根因复盘
 
-- Best lesson to keep:
-- Method or workflow validated:
-- One thing to stop repeating:
-- Strategic insight from this week:
+- 目标问题:
+- 执行问题:
+- 机制问题:
+- 本周已做的战略调整:
 
-## Carry Forward Decisions
+## 经验与洞察
 
-- Continue:
-- Start or adjust:
-- Stop:
-- Delegate:
-- Delete instead of rolling over:
-- Move to next week:
+- 最值得保留的经验:
+- 已验证的方法/流程:
+- 下周停止重复的事:
+- 本周战略洞察:
 
-## Next Week GPS Preview
+## 延续与调整决策
 
-- Goal:
-- Priority:
+- 继续:
+- 启动或调整:
+- 停止:
+- 授权/委托:
+- 不滚动直接删除:
+- 转入下周:
+
+## 下周 GPS 预览
+
+- 下周目标:
+- 优先级:
   - A1:
   - A2:
   - B:
-- Steps:
-  - Step 1:
-  - Step 2:
-  - Step 3:
+- 关键步骤:
+  - 步骤1:
+  - 步骤2:
+  - 步骤3:
 
-## Next Week Preparation
+## 下周准备
 
-- Next week's top goal:
-- Protected block to add or protect:
-- Mechanism to strengthen:
-- Follow-up or delegation to close:
+- 下周最重要目标:
+- 需要新增或保护的时间块:
+- 需要加强的机制:
+- 需要完成的跟进或委托:
 
-## Next 1-3 Moves
+## Next 1-3 Moves（接下来 1-3 步）
 
-- Move 1:
-- Move 2:
-- Move 3:
+- 动作 1:
+- 动作 2:
+- 动作 3:
