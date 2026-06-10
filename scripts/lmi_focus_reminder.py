@@ -31,6 +31,9 @@ DEFAULT_OPENCLAW_BIN = (
 )
 REPO_DIR = Path(__file__).resolve().parents[1]
 DAILY_GENERATOR = REPO_DIR / 'scripts' / 'generate_lmi_daily.py'
+A_HEADINGS = ['## A：重要事项', '### A：重要事项']
+B_HEADINGS = ['## B：紧要事项', '### B：紧要事项']
+SCHEDULE_HEADINGS = ['## Schedule', '## 今日日程', '## 今日时间安排']
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -67,16 +70,26 @@ def section_bullets(text: str, heading: str) -> list[str]:
     lines = text.splitlines()
     out: list[str] = []
     capture = False
+    heading_level = len(heading) - len(heading.lstrip('#'))
     for line in lines:
         stripped = line.strip()
         if stripped == heading:
             capture = True
             continue
-        if capture and stripped.startswith('## '):
-            break
-        if capture and stripped.startswith('- '):
-            out.append(stripped[2:].strip())
+        if capture and stripped.startswith('#'):
+            current_level = len(stripped) - len(stripped.lstrip('#'))
+            if current_level <= heading_level:
+                break
+        if capture and line.startswith('- '):
+            out.append(line[2:].strip())
     return out
+
+
+def section_bullets_any(text: str, headings: list[str]) -> list[str]:
+    items: list[str] = []
+    for heading in headings:
+        items.extend(section_bullets(text, heading))
+    return items
 
 
 def normalize(text: str) -> str:
@@ -110,8 +123,8 @@ def parse_priority_items(text: str) -> dict[str, dict]:
     month_match = re.search(r'- 本月重点目标：(.+)', text)
     if month_match:
         month_goal = month_match.group(1).strip()
-    for heading, task_class in [('## A：重要事项', 'A'), ('## B：紧要事项', 'B')]:
-        for bullet in section_bullets(text, heading):
+    for headings, task_class in [(A_HEADINGS, 'A'), (B_HEADINGS, 'B')]:
+        for bullet in section_bullets_any(text, headings):
             match = re.match(r'([AB]\d+):\s*(.+)', bullet)
             if not match:
                 continue
@@ -134,7 +147,7 @@ SCHEDULE_RE = re.compile(r'^-\s*(\d{2}:\d{2})-(\d{2}:\d{2})\s+(.+)$')
 
 def parse_schedule_entries(text: str) -> list[dict]:
     entries: list[dict] = []
-    for bullet in section_bullets(text, '## Schedule'):
+    for bullet in section_bullets_any(text, SCHEDULE_HEADINGS):
         if '✅' in bullet:
             continue
         cleaned = bullet.replace('**', '').replace('~~', '').strip()

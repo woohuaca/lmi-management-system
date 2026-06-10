@@ -21,6 +21,9 @@ Use this reference for daily work planning and daily review.
 - Do not stack multiple deep-work blocks, external meetings, or travel-heavy activities back-to-back without elasticity.
 - When fixed appointments or action commitments are confirmed, update them into Feishu calendar or another stable calendar source instead of keeping them only in chat or markdown.
 - If the day has external events, travel, or uncertain duration, show the schedule as provisional and keep slack instead of pretending the whole day is fully knowable.
+- Default display order should be: `昨日承接 -> 今日主结果 -> 硬约束 -> 今日时间安排 -> 事项归位（A/B/C/D） -> 今天不排入主线 -> 这样排的逻辑 -> 收工前`.
+- `A/B/C/D` is a classification layer, not the visual opening. The visual opening should help the user see today's main line and real time pressure in one screen.
+- Unfinished items and Inbox items should enter `今天不排入主线` or `重决策` first unless they have been consciously promoted into today's protected blocks.
 
 ## Daily Review Rules
 

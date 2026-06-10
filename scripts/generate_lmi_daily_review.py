@@ -27,6 +27,14 @@ FALLBACK_MEMORY_DIR = (
 AZAI_SESSION_DIR = Path(os.environ.get('LMI_AZAI_SESSION_DIR', str(Path.home() / '.openclaw' / 'agents' / 'azai' / 'sessions'))).expanduser()
 PLACEHOLDER_MARKERS = ('待补充', '待今晚', '待确认')
 GUIDANCE_MARKERS = ('当前无明确', '当前无固定', '建议开工前', '建议先补', '请至少补', '请补 1')
+CATEGORY_HEADINGS = {
+    'a': ['## A：重要事项', '### A：重要事项'],
+    'b': ['## B：紧要事项', '### B：紧要事项'],
+    'c': ['## C：联络/追踪事项', '### C：联络/追踪事项'],
+    'd': ['## D：会议/讨论/协调事项', '### D：会议/讨论/协调事项'],
+}
+COMPLETED_HEADINGS = ['## Todays Completed Items', '## 今日已完成事项']
+SCHEDULE_HEADINGS = ['## Schedule', '## 今日日程', '## 今日时间安排']
 
 
 def read_text(path: Path) -> str:
@@ -53,15 +61,18 @@ def lines_under(text: str, heading: str) -> list[str]:
     lines = text.splitlines()
     out: list[str] = []
     capture = False
+    heading_level = len(heading) - len(heading.lstrip('#'))
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith(heading):
+        if stripped == heading:
             capture = True
             continue
         if capture and stripped.startswith('#'):
-            break
+            current_level = len(stripped) - len(stripped.lstrip('#'))
+            if current_level <= heading_level:
+                break
         if capture and stripped:
-            out.append(stripped)
+            out.append(line.rstrip())
     return out
 
 
@@ -146,10 +157,16 @@ def plan_rows_from_session(today: date) -> list[dict]:
 def section_bullets(text: str, heading: str) -> list[str]:
     items: list[str] = []
     for line in lines_under(text, heading):
-        stripped = line.strip()
-        if stripped.startswith('- '):
-            items.append(stripped[2:].strip())
+        if line.startswith('- '):
+            items.append(line[2:].strip())
     return items
+
+
+def section_bullets_any(text: str, headings: list[str]) -> list[str]:
+    items: list[str] = []
+    for heading in headings:
+        items.extend(section_bullets(text, heading))
+    return dedupe_keep_order(items)
 
 
 def anchor_value(text: str, label: str) -> str:
@@ -204,8 +221,8 @@ def meaningful(value: str) -> bool:
 
 def plan_items(text: str) -> list[str]:
     items: list[str] = []
-    for heading in ['## A：重要事项', '## B：紧要事项', '## C：联络/追踪事项', '## D：会议/讨论/协调事项']:
-        for item in section_bullets(text, heading):
+    for headings in CATEGORY_HEADINGS.values():
+        for item in section_bullets_any(text, headings):
             clean = strip_code_prefix(item)
             if meaningful(clean):
                 items.append(clean)
@@ -279,7 +296,7 @@ def review_status(top: str, done: list[str], doing: list[str], biggest_progress:
 
 def completed(text: str) -> list[str]:
     items: list[str] = []
-    for item in section_bullets(text, '## Todays Completed Items'):
+    for item in section_bullets_any(text, COMPLETED_HEADINGS):
         if item.startswith('[x]'):
             clean = strip_code_prefix(item)
             if meaningful(clean):
@@ -289,7 +306,7 @@ def completed(text: str) -> list[str]:
 
 def in_progress(text: str) -> list[str]:
     items: list[str] = []
-    for heading in ['## A：重要事项']:
+    for heading in CATEGORY_HEADINGS['a']:
         for item in section_bullets(text, heading):
             clean = strip_code_prefix(item)
             if meaningful(clean):
@@ -310,8 +327,8 @@ def existing_review_value(text: str, key: str) -> str:
 
 def unfinished_candidates(text: str) -> list[str]:
     items: list[str] = []
-    for heading in ['## A：重要事项', '## B：紧要事项', '## C：联络/追踪事项', '## D：会议/讨论/协调事项']:
-        for item in section_bullets(text, heading):
+    for headings in CATEGORY_HEADINGS.values():
+        for item in section_bullets_any(text, headings):
             clean = strip_code_prefix(item)
             if meaningful(clean):
                 items.append(clean)
@@ -329,7 +346,7 @@ def unfinished_candidates(text: str) -> list[str]:
 
 def schedule_rows(text: str) -> list[dict]:
     rows: list[dict] = []
-    for item in section_bullets(text, '## Schedule'):
+    for item in section_bullets_any(text, SCHEDULE_HEADINGS):
         match = re.match(r'^(\d{2}:\d{2})-(\d{2}:\d{2})\s+(.+)$', item)
         if not match:
             continue

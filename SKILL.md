@@ -137,7 +137,9 @@ Read [references/agent-collaboration-rules.md](references/agent-collaboration-ru
 - For daily planning, treat unprocessed inbox items as things to re-decide, not things to auto-promote into A/B/C/D.
 - Prefer cleaning Inbox during the evening daily review, not during the morning plan.
 - For inbox cleanup decisions, use exactly these buckets: `进明天` / `留在本周` / `转项目事实候选` / `丢弃 / 仅记录`.
-- For default `今日计划` output, keep the structure lightweight: `昨日承接 / 今日主结果 / A/B/C/D / 今日日程 / 收工前 / Next 1-3 Moves`.
+- For default `今日计划` output, use this order: `昨日承接 / 今日主结果 / 硬约束 / 今日时间安排 / 事项归位（A/B/C/D） / 今天不排入主线 / 这样排的逻辑 / 收工前 / Todays Completed Items / Daily Review / Next 1-3 Moves`.
+- In daily plans, put the user-facing focus first: `主结果 -> 硬约束 -> 时间安排`; keep A/B/C/D as a compact归位层, not the opening frame.
+- When there is a conflict between category completeness and readability, protect readability first, but keep enough structure for the system to support daily review, weekly review, and focus reminders.
 - For daily and weekly scheduling, protect the user's best large blocks for key work, leave post-task recovery buffers, and avoid stacking heavy work back-to-back without elasticity.
 - When fixed commitments are known, prefer updating them into Feishu calendar or another stable calendar source so the plan can be checked against real time commitments.
 - For default `今日计划`, do not include pomodoro or focus-block suggestions unless the user explicitly asks to start focus mode.

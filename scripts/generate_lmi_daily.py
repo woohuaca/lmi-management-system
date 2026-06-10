@@ -5,7 +5,7 @@ import json
 import os
 import re
 import subprocess
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 from lmi_execution_support import load_inbox_snapshot, load_tomorrow_carry_items
@@ -26,8 +26,9 @@ FALLBACK_MEMORY_DIR = (
     if ALLOW_MAIN_MEMORY_FALLBACK
     else None
 )
+DISABLE_CALENDAR_QUERY = env_flag('LMI_DISABLE_CALENDAR_QUERY', False)
 PLACEHOLDER_MARKERS = ('待补充', '待从', 'missing', '待确认', '待今晚', '待在今天')
-GUIDANCE_MARKERS = ('当前无明确', '当前无固定', '建议开工前', '建议先补', '建议先快速补')
+GUIDANCE_MARKERS = ('当前无明确', '当前无固定', '当前无必须', '建议开工前', '建议先补', '建议先快速补')
 SOURCE_WEIGHTS = {
     'weekly_goal': 120,
     'tomorrow_first_move': 105,
@@ -84,6 +85,14 @@ WEEKDAY_ALIASES = {
     5: {'Sat', 'Saturday', '周六'},
     6: {'Sun', 'Sunday', '周日'},
 }
+CARRY_FORWARD_HEADINGS = (
+    '## A：重要事项',
+    '### A：重要事项',
+    '## B：紧要事项',
+    '### B：紧要事项',
+    '## C：联络/追踪事项',
+    '### C：联络/追踪事项',
+)
 SCHEDULE_ADMIN_MARKERS = (
     '晨间校准',
     '午餐',
@@ -123,6 +132,42 @@ CALENDAR_SYNC_MARKERS = (
     '复盘',
     '对齐',
     '协调',
+)
+HARD_CONSTRAINT_MARKERS = (
+    '会议',
+    '交流',
+    '评审',
+    '拜访',
+    '外出',
+    '返程',
+    '出发',
+    '抵达',
+    '客户活动',
+    '发布会',
+)
+BUFFER_TASK_MARKERS = (
+    '沉淀',
+    '恢复',
+    '缓冲',
+    '收口',
+)
+LUNCH_TASK_MARKERS = (
+    '午餐',
+    '午间留白',
+    '休息',
+)
+MORNING_CALIBRATION_MARKERS = (
+    '晨间校准',
+)
+EXPLANATORY_PREFIXES = (
+    '产出目标：',
+    '关键输入：',
+    '讨论要点：',
+    '说明：',
+    '为什么重要：',
+    '判断标准：',
+    '背景：',
+    '备注：',
 )
 
 
@@ -169,6 +214,36 @@ def section_lines(text: str, headings: list[str]) -> list[str]:
     return out
 
 
+def lines_under_heading(text: str, heading: str) -> list[str]:
+    if not text:
+        return []
+    lines = text.splitlines()
+    out: list[str] = []
+    capture = False
+    heading_level = len(heading) - len(heading.lstrip('#'))
+    for line in lines:
+        stripped = line.strip()
+        if stripped == heading:
+            capture = True
+            continue
+        if capture and stripped.startswith('#'):
+            current_level = len(stripped) - len(stripped.lstrip('#'))
+            if current_level <= heading_level:
+                break
+        if capture and stripped:
+            out.append(line.rstrip())
+    return out
+
+
+def top_level_bullets(text: str, headings: tuple[str, ...]) -> list[str]:
+    items: list[str] = []
+    for heading in headings:
+        for line in lines_under_heading(text, heading):
+            if line.startswith('- '):
+                items.append(line[2:].strip())
+    return dedupe_keep_order(items)
+
+
 def meaningful(text: str) -> bool:
     stripped = text.strip()
     if not stripped:
@@ -178,6 +253,11 @@ def meaningful(text: str) -> bool:
 
 def non_placeholder(items: list[str]) -> list[str]:
     return [item for item in items if meaningful(item)]
+
+
+def is_explanatory_note(text: str) -> bool:
+    clean = clean_md(strip_priority_prefix(text))
+    return any(clean.startswith(prefix) for prefix in EXPLANATORY_PREFIXES)
 
 
 def extract_progress(yesterday: str) -> str:
@@ -198,29 +278,35 @@ def extract_progress(yesterday: str) -> str:
 
 def extract_unfinished(yesterday: str) -> list[str]:
     items: list[str] = []
+    for bullet in top_level_bullets(yesterday, CARRY_FORWARD_HEADINGS):
+        clean = strip_priority_prefix(bullet)
+        if meaningful(clean) and not is_explanatory_note(clean):
+            items.append(clean)
+
     in_snapshot = False
     capture_snapshot_items = False
-    for line in yesterday.splitlines():
-        stripped = line.strip()
-        if stripped == '## LMI Review Snapshot':
-            in_snapshot = True
-            continue
-        if in_snapshot and stripped.startswith('## '):
-            break
-        if in_snapshot and stripped.startswith('- Unfinished items to re-decide:'):
-            capture_snapshot_items = True
-            continue
-        if in_snapshot and capture_snapshot_items:
-            if stripped.startswith('- Tomorrow First Move:'):
-                capture_snapshot_items = False
+    if not items:
+        for line in yesterday.splitlines():
+            stripped = line.strip()
+            if stripped == '## LMI Review Snapshot':
+                in_snapshot = True
                 continue
-            if line.startswith('  - '):
-                item = line[4:].strip()
-                if meaningful(item) and item not in items:
-                    items.append(item)
+            if in_snapshot and stripped.startswith('## '):
+                break
+            if in_snapshot and stripped.startswith('- Unfinished items to re-decide:'):
+                capture_snapshot_items = True
                 continue
-            if stripped.startswith('- ') or stripped.startswith('## '):
-                capture_snapshot_items = False
+            if in_snapshot and capture_snapshot_items:
+                if stripped.startswith('- Tomorrow First Move:'):
+                    capture_snapshot_items = False
+                    continue
+                if line.startswith('  - '):
+                    item = line[4:].strip()
+                    if meaningful(item) and not is_explanatory_note(item) and item not in items:
+                        items.append(item)
+                    continue
+                if stripped.startswith('- ') or stripped.startswith('## '):
+                    capture_snapshot_items = False
     for line in yesterday.splitlines():
         m = re.match(r'\d+\. \*\*(.+?)\*\*', line.strip())
         if m:
@@ -228,15 +314,15 @@ def extract_unfinished(yesterday: str) -> list[str]:
     pending = [ln for ln in section_lines(yesterday, ['### 已完成']) if ln.startswith('- [ ]')]
     for ln in pending:
         txt = re.sub(r'^- \[ \]\s*', '', ln)
-        if txt not in items:
+        if txt not in items and not is_explanatory_note(txt):
             items.append(txt)
     numbered = [ln for ln in section_lines(yesterday, ['### A 重要事项', '### B 紧要事项', '### C 联络/追踪事项', '### D 会议/协调事项']) if re.match(r'^\d+\.\s+\*\*', ln)]
     for ln in numbered:
         txt = re.sub(r'^\d+\.\s+\*\*', '', ln)
         txt = re.sub(r'\*\*.*$', '', txt).strip()
-        if txt and txt not in items:
+        if txt and txt not in items and not is_explanatory_note(txt):
             items.append(txt)
-    return non_placeholder(items)[:6]
+    return [item for item in non_placeholder(items) if not is_explanatory_note(item)][:6]
 
 
 def extract_tomorrow_first_move(yesterday: str) -> str:
@@ -300,7 +386,7 @@ def is_operational_first_move(text: str) -> bool:
 
 
 def strip_priority_prefix(item: str) -> str:
-    return re.sub(r'^[A-D]\d?\s+', '', item).strip()
+    return re.sub(r'^[A-D]\d+\s*[:：]?\s*', '', item).strip()
 
 
 def explode_compound_items(items: list[str]) -> list[str]:
@@ -377,6 +463,22 @@ def source_weight(source: str, text: str, minutes_span: int = 0) -> int:
 
 
 def parse_schedule_rows(schedule: list[str]) -> list[dict]:
+    return [
+        {
+            'start': entry['start'],
+            'end': entry['end'],
+            'minutes': entry['minutes'],
+            'task': (
+                f"{entry['label']} -> {entry['task']}"
+                if entry.get('label') and entry.get('task') and entry['label'] != entry['task']
+                else entry.get('task', entry.get('label', ''))
+            ),
+        }
+        for entry in parse_schedule_entries(schedule)
+    ]
+
+
+def parse_schedule_entries(schedule: list[str]) -> list[dict]:
     rows: list[dict] = []
     for raw in schedule:
         stripped = raw.strip()
@@ -388,12 +490,16 @@ def parse_schedule_rows(schedule: list[str]) -> list[dict]:
         end = minutes(end_label)
         if start is None or end is None or end <= start:
             continue
-        task = clean_md(rest.split('->', 1)[-1].strip())
+        parts = re.split(r'->|→', rest, maxsplit=1)
+        label = clean_md(parts[0].strip())
+        task = clean_md(parts[1].strip()) if len(parts) > 1 else label
         rows.append({
             'start': start,
             'end': end,
             'minutes': end - start,
+            'label': label,
             'task': task,
+            'raw': stripped,
         })
     return rows
 
@@ -498,12 +604,103 @@ def has_fixed_commitment_rows(rows: list[dict]) -> bool:
 
 
 def calendar_read_succeeded(calendar_source: str) -> bool:
-    return calendar_source in {'feishu calendar via azai', 'feishu calendar via azai (no events today)'}
+    return calendar_source in {
+        'feishu calendar via azai',
+        'feishu calendar via azai (no events today)',
+        'feishu calendar via lark-cli',
+        'feishu calendar via lark-cli (no events today)',
+    }
+
+
+def calendar_source_warning(calendar_source: str) -> str:
+    if 'missing scope' in calendar_source:
+        return '飞书日历读取还没授权 `calendar:calendar.event:read`，当前只能先按建议时间块排。'
+    if 'authorization' in calendar_source:
+        return '飞书日历读取授权异常，当前只能先按建议时间块排。'
+    if not calendar_read_succeeded(calendar_source):
+        return '当前时间安排仍需按真实飞书日历校正，不要把建议块当成最终版。'
+    return ''
+
+
+def schedule_entry_line(entry: dict) -> str:
+    slot = f"{minute_label(entry['start'])}-{minute_label(entry['end'])}"
+    label = entry.get('label', '').strip()
+    task = entry.get('task', '').strip()
+    if label and task and label != task:
+        return f'{slot} {label} -> {task}'
+    return f'{slot} {task or label}'.strip()
+
+
+def schedule_entry_text(entry: dict) -> str:
+    return f"- {schedule_entry_line(entry)}"
+
+
+def is_lunch_schedule_task(text: str) -> bool:
+    return any(marker in text for marker in LUNCH_TASK_MARKERS)
+
+
+def is_buffer_schedule_task(text: str) -> bool:
+    return any(marker in text for marker in BUFFER_TASK_MARKERS)
+
+
+def is_closeout_schedule_task(text: str) -> bool:
+    return any(marker in text for marker in ('收工整理', '复盘', '收口'))
+
+
+def is_hard_constraint_entry(
+    entry: dict,
+    calendar_source: str,
+    schedule_source: str,
+    previous_hard_end: int | None,
+) -> bool:
+    label = clean_md(entry.get('label', ''))
+    task = clean_md(entry.get('task', ''))
+    combined = f'{label} {task}'.strip()
+    if label == '日历安排':
+        return True
+    if schedule_source == 'synthetic fallback schedule':
+        return False
+    if previous_hard_end is not None and is_buffer_schedule_task(combined):
+        return 0 <= entry['start'] - previous_hard_end <= 30
+    if any(marker in combined for marker in HARD_CONSTRAINT_MARKERS):
+        if not label.startswith(('A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3')):
+            return True
+    if calendar_read_succeeded(calendar_source):
+        return False
+    return False
+
+
+def split_schedule_entries(schedule: list[str], calendar_source: str, schedule_source: str = '') -> tuple[list[dict], list[dict]]:
+    hard_constraints: list[dict] = []
+    planned_entries: list[dict] = []
+    previous_hard_end: int | None = None
+    for entry in parse_schedule_entries(schedule):
+        combined = f"{entry['label']} {entry['task']}".strip()
+        if any(marker in combined for marker in MORNING_CALIBRATION_MARKERS):
+            previous_hard_end = None
+            continue
+        if is_lunch_schedule_task(combined):
+            previous_hard_end = None
+            continue
+        if is_hard_constraint_entry(entry, calendar_source, schedule_source, previous_hard_end):
+            hard_constraints.append(entry)
+            previous_hard_end = entry['end']
+            continue
+        planned_entries.append(entry)
+        previous_hard_end = None
+    return hard_constraints, planned_entries
 
 
 def is_meeting_like(text: str) -> bool:
     clean = strip_priority_prefix(clean_md(text))
     return any(word in clean for word in ['会议', '沟通', '对齐', '协调', '讨论', '评审', '交流'])
+
+
+def is_displayable_meeting_item(text: str) -> bool:
+    clean = strip_priority_prefix(clean_md(text))
+    if re.match(r'^(将|整理|完成|形成|推进|沉淀|输出)', clean):
+        return False
+    return is_meeting_like(clean)
 
 
 def is_contact_like(text: str) -> bool:
@@ -823,49 +1020,128 @@ def parse_json_array(text: str) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
+LOCAL_TIMEZONE = timezone(timedelta(hours=8))
+
+
+def format_calendar_clock(value) -> str | None:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+    if re.fullmatch(r'\d{2}:\d{2}', raw):
+        return raw
+    if raw.isdigit():
+        timestamp = int(raw)
+        if timestamp > 10**12:
+            timestamp //= 1000
+        return datetime.fromtimestamp(timestamp, tz=LOCAL_TIMEZONE).strftime('%H:%M')
+    try:
+        parsed = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=LOCAL_TIMEZONE)
+        return parsed.astimezone(LOCAL_TIMEZONE).strftime('%H:%M')
+    except ValueError:
+        pass
+    match = re.search(r'(\d{2}):(\d{2})', raw)
+    if match:
+        return f'{match.group(1)}:{match.group(2)}'
+    return None
+
+
+def extract_events_from_agenda_payload(payload) -> list[dict]:
+    events: list[dict] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    def maybe_add(node: dict) -> None:
+        if not isinstance(node, dict):
+            return
+        start = (
+            format_calendar_clock(node.get('start'))
+            or format_calendar_clock(node.get('start_time'))
+            or format_calendar_clock(node.get('display_start'))
+        )
+        end = (
+            format_calendar_clock(node.get('end'))
+            or format_calendar_clock(node.get('end_time'))
+            or format_calendar_clock(node.get('display_end'))
+        )
+        title = clean_md(
+            str(
+                node.get('title')
+                or node.get('summary')
+                or node.get('event_title')
+                or node.get('name')
+                or ''
+            )
+        )
+        if not start or not end or not title:
+            return
+        key = (start, end, title)
+        if key in seen:
+            return
+        seen.add(key)
+        events.append({'start': start, 'end': end, 'title': title})
+
+    def walk(node) -> None:
+        if isinstance(node, dict):
+            maybe_add(node)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(payload)
+    events.sort(key=lambda item: (item['start'], item['end'], item['title']))
+    return events
+
+
 def query_calendar_events(today: date) -> tuple[list[dict], str]:
-    prompt = (
-        '请直接使用飞书日历工具，查询今天（Asia/Shanghai）所有日程。'
-        '只返回 JSON 数组，每项格式为 {"start":"HH:MM","end":"HH:MM","title":"..."}。'
-        '如果今天没有任何日程，只返回 []。'
-        '如果工具失败，只返回 ERROR。'
-    )
+    if DISABLE_CALENDAR_QUERY:
+        return [], 'calendar query disabled by env'
     try:
         result = subprocess.run(
             [
-                'openclaw',
-                'agent',
-                '--agent',
-                'azai',
-                '--channel',
-                'feishu',
-                '--message',
-                prompt,
-                '--json',
+                'lark-cli',
+                'calendar',
+                '+agenda',
+                '--as',
+                'user',
+                '--start',
+                today.isoformat(),
+                '--end',
+                today.isoformat(),
+                '--format',
+                'json',
             ],
             check=False,
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=60,
         )
     except Exception as exc:
         return [], f'calendar query failed: {exc}'
-    if result.returncode != 0:
-        err = result.stderr.strip() or result.stdout.strip() or 'calendar query command failed'
-        return [], f'calendar query failed: {err}'
+    stdout = (result.stdout or '').strip()
+    stderr = (result.stderr or '').strip()
     try:
-        payload = json.loads(result.stdout)
-        text = payload['result']['payloads'][0]['text']
+        payload = json.loads(stdout) if stdout else {}
     except Exception:
-        text = result.stdout.strip()
-    if 'ERROR' in text:
-        return [], 'calendar query returned ERROR'
-    events = parse_json_array(text)
+        payload = {}
+    if isinstance(payload, dict) and payload.get('ok') is False:
+        error = payload.get('error') or {}
+        subtype = str(error.get('subtype', '')).strip()
+        message = str(error.get('message', '')).strip()
+        if subtype == 'missing_scope' or 'missing required scope' in message.lower():
+            return [], f'calendar authorization missing scope: {message}'
+        return [], f'calendar authorization error: {message or stderr or "unknown"}'
+    events = extract_events_from_agenda_payload(payload)
     if events:
-        return events, 'feishu calendar via azai'
-    if text.strip() in ('[]', '**NO_EVENTS**', 'NO_EVENTS'):
-        return [], 'feishu calendar via azai (no events today)'
-    return [], 'calendar unavailable in azai runtime; using weekly-priority-based fallback blocks'
+        return events, 'feishu calendar via lark-cli'
+    if result.returncode == 0:
+        return [], 'feishu calendar via lark-cli (no events today)'
+    err = stderr or stdout or 'calendar query command failed'
+    return [], f'calendar query failed: {err}'
 
 
 def hm(value: str) -> tuple[int, int] | None:
@@ -955,7 +1231,14 @@ def schedule_from_calendar(events: list[dict], a_items: list[str], c_items: list
             free_slots.append((cursor, start))
         schedule.append(f'- {minute_label(start)}-{minute_label(end)} 日历安排 -> {title}')
         buffer_minutes = RECOVERY_BUFFER_MINUTES if (end - start) >= LONG_BLOCK_THRESHOLD_MINUTES or is_heavy_schedule_task(title) else 10
-        cursor = max(cursor, end + buffer_minutes)
+        buffer_end = min(end + buffer_minutes, day_end)
+        if buffer_end - end >= 10 and not overlaps_lunch(end, buffer_end):
+            if any(marker in title for marker in ['会议', '评审', '讨论', '交流', '对齐']):
+                buffer_task = '会后沉淀 / 记录 / 恢复缓冲'
+            else:
+                buffer_task = '恢复 / 收口缓冲'
+            schedule.append(f'- {minute_label(end)}-{minute_label(buffer_end)} {buffer_task}')
+        cursor = max(cursor, buffer_end)
     if cursor < 12 * 60 < day_end and not any('午间留白' in row for row in schedule):
         if cursor < 12 * 60:
             block_end = 12 * 60
@@ -1128,6 +1411,101 @@ def build_urgent_items(a_items: list[str], unfinished: list[str], weekly_goals: 
     return dedupe_keep_order(items)[:2]
 
 
+def arranged_sections(schedule: list[str], calendar_source: str, schedule_source: str = '') -> list[tuple[str, list[str]]]:
+    _hard_constraints, planned_entries = split_schedule_entries(schedule, calendar_source, schedule_source)
+    sections: dict[str, list[str]] = {
+        '上午主块': [],
+        '下午第一主块': [],
+        '下午第二主块': [],
+        '弹性块': [],
+    }
+    afternoon_slots_used = 0
+    for entry in planned_entries:
+        combined = f"{entry['label']} {entry['task']}".strip()
+        if is_closeout_schedule_task(combined):
+            sections['弹性块'].append(schedule_entry_text(entry))
+            continue
+        if entry['start'] < 12 * 60:
+            sections['上午主块'].append(schedule_entry_text(entry))
+            continue
+        if afternoon_slots_used == 0:
+            sections['下午第一主块'].append(schedule_entry_text(entry))
+            afternoon_slots_used += 1
+            continue
+        if afternoon_slots_used == 1:
+            sections['下午第二主块'].append(schedule_entry_text(entry))
+            afternoon_slots_used += 1
+            continue
+        sections['弹性块'].append(schedule_entry_text(entry))
+    return [(title, rows) for title, rows in sections.items() if rows]
+
+
+def hard_constraint_lines(schedule: list[str], calendar_source: str, schedule_source: str = '') -> list[str]:
+    hard_constraints, _planned_entries = split_schedule_entries(schedule, calendar_source, schedule_source)
+    return [schedule_entry_text(entry) for entry in hard_constraints]
+
+
+def build_not_in_mainline_items(
+    a_items: list[str],
+    b_items: list[str],
+    c_items: list[str],
+    d_items: list[str],
+    unfinished: list[str],
+    inbox_items: list[str],
+) -> list[str]:
+    selected_norms = {
+        normalize_match_text(item)
+        for item in a_items[:2] + b_items[:1] + c_items[:1] + d_items[:1]
+        if meaningful(item)
+    }
+    candidates = dedupe_keep_order(
+        unfinished
+        + inbox_items
+        + a_items[2:]
+        + b_items[1:]
+        + c_items[1:]
+        + d_items[1:]
+    )
+    out: list[str] = []
+    for item in candidates:
+        clean = strip_priority_prefix(item)
+        if is_explanatory_note(clean):
+            continue
+        if normalize_match_text(clean) in selected_norms:
+            continue
+        out.append(f'{clean}：今天先不抢主位，收工前再决定是否进明天。')
+    return out[:3]
+
+
+def build_plan_logic(
+    primary_result: str,
+    schedule: list[str],
+    calendar_source: str,
+    schedule_source: str,
+    b_items: list[str],
+    c_items: list[str],
+    inbox_items: list[str],
+) -> list[str]:
+    hard_lines = hard_constraint_lines(schedule, calendar_source, schedule_source)
+    section_titles = [title for title, _rows in arranged_sections(schedule, calendar_source, schedule_source)]
+    notes: list[str] = []
+    if hard_lines:
+        notes.append('先锁硬约束，再从剩余整块里保护主线，不让会议和切换把主结果打碎。')
+    else:
+        notes.append('今天暂未识别出已确认硬约束，开工前先核对飞书日历，再最终锁定主线。')
+    if primary_result and any(title in section_titles for title in ('上午主块', '下午第一主块')):
+        notes.append(f'把 `{primary_result}` 放进今天最完整的大块，先求可讨论版本，再求完整收尾。')
+    if any(is_buffer_schedule_task(row) for row in hard_lines):
+        notes.append('长会议 / 外出后明确留出沉淀与恢复缓冲，避免硬切到下一件事。')
+    if b_items or c_items:
+        notes.append('B/C 类事项放在主线之后承接，只解决必要推进，不抢占最好时间。')
+    if inbox_items:
+        notes.append('Inbox 只作为重决策输入，不自动升级成今天主线。')
+    if not calendar_read_succeeded(calendar_source):
+        notes.append('当前时间安排仍是建议版，需按真实日历再校正一次。')
+    return dedupe_keep_order(notes)[:4]
+
+
 def build_output(
     today: date,
     yesterday_source: str,
@@ -1147,19 +1525,46 @@ def build_output(
     d_items: list[str],
     schedule: list[str],
 ) -> str:
-    a_display = [strip_priority_prefix(item) for item in a_items]
-    b_display = [strip_priority_prefix(item) for item in b_items]
-    c_display = [strip_priority_prefix(item) for item in c_items]
-    d_display = [strip_priority_prefix(item) for item in d_items]
+    a_display = [strip_priority_prefix(item) for item in a_items if not is_explanatory_note(item)]
+    a_norms = {normalize_match_text(item) for item in a_display if meaningful(item)}
+    b_display = [strip_priority_prefix(item) for item in b_items if not is_explanatory_note(item) and normalize_match_text(item) not in a_norms]
+    c_display = [strip_priority_prefix(item) for item in c_items if not is_explanatory_note(item) and normalize_match_text(item) not in a_norms]
+    c_norms = a_norms | {normalize_match_text(item) for item in c_display if meaningful(item)}
+    d_display = [
+        strip_priority_prefix(item)
+        for item in d_items
+        if not is_explanatory_note(item)
+        and normalize_match_text(item) not in c_norms
+        and is_displayable_meeting_item(item)
+    ]
     yesterday_progress_display = biggest_progress if meaningful(biggest_progress) else '昨晚未回填昨日进展，建议开工前先快速补一句昨天最重要推进。'
     tomorrow_first_move_display = strip_priority_prefix(tomorrow_first_move) if meaningful(tomorrow_first_move) else '昨晚未回填 Tomorrow First Move，建议先确认今天的第一步。'
-    show_d_placeholder = bool(d_display) and all('待补充' in item for item in d_display)
     carry_display = carry[:2]
     warning_lines: list[str] = []
     if weekly_warning:
         warning_lines.append(weekly_warning)
-    if not calendar_read_succeeded(calendar_source):
-        warning_lines.append('当前未接入自动飞书日历，今日日程不是最终版，需要先按真实会议校正。')
+    calendar_warning = calendar_source_warning(calendar_source)
+    if calendar_warning:
+        warning_lines.append(calendar_warning)
+    hard_lines = hard_constraint_lines(schedule, calendar_source, schedule_source)
+    arranged = arranged_sections(schedule, calendar_source, schedule_source)
+    not_in_mainline = build_not_in_mainline_items(
+        a_display,
+        b_display,
+        c_display,
+        d_display,
+        unfinished,
+        inbox_items,
+    )
+    logic_notes = build_plan_logic(
+        a_display[0] if a_display else strip_priority_prefix(tomorrow_first_move),
+        schedule,
+        calendar_source,
+        schedule_source,
+        b_display,
+        c_display,
+        inbox_items,
+    )
     out: list[str] = []
     out.append(f'# {today.isoformat()} LMI 日计划草案\n')
     out.append('## 昨日承接\n')
@@ -1188,55 +1593,87 @@ def build_output(
             out.append(f'- {line}')
 
     out.append('\n## 今日主结果\n')
-    out.append(f"- {a_display[0] if a_display else strip_priority_prefix(tomorrow_first_move)}")
+    out.append(f"- A1: {a_display[0] if a_display else strip_priority_prefix(tomorrow_first_move)}")
     if weekly_goals:
         out.append(f'- 承接本周关键结果：{strip_priority_prefix(weekly_goals[0])}')
 
-    out.append('\n## A：重要事项\n')
+    out.append('\n## 硬约束\n')
+    if hard_lines:
+        out.extend(hard_lines)
+    else:
+        out.append('- 当前没有已确认硬约束；请先核对飞书日历，再最终锁定主线。')
+
+    out.append('\n## 今日时间安排\n')
+    if arranged:
+        for title, rows in arranged:
+            out.append(f'\n### {title}\n')
+            out.extend(rows)
+    else:
+        out.append('- 当前还没有可执行时间块；请先确认今天的固定安排。')
+
+    out.append('\n## 事项归位\n')
+    out.append('\n### A：重要事项\n')
     for i, item in enumerate(a_display, start=1):
         out.append(f'- A{i}: {item}')
 
-    out.append('\n## B：紧要事项\n')
+    out.append('\n### B：紧要事项\n')
     if b_display and not all('待补充' in item for item in b_display):
         for i, item in enumerate(b_display, start=1):
             out.append(f'- B{i}: {item}')
     else:
         out.append('- 当前无明确紧急事项；如出现临时风险、截止或必须即时响应，再插入今天安排。')
 
-    out.append('\n## C：联络/追踪事项\n')
+    out.append('\n### C：联络/追踪事项\n')
     if c_display:
         for i, item in enumerate(c_display, start=1):
             out.append(f'- C{i}: {item}')
     else:
         out.append('- 当前无必须单列的联络/追踪事项。')
 
-    out.append('\n## D：会议/讨论/协调事项\n')
-    if show_d_placeholder:
-        if calendar_read_succeeded(calendar_source) and parse_schedule_rows(schedule):
-            out.append('- 今天没有需要单列的会议决策项；固定会议见今日日程。')
-        else:
-            out.append('- 当前没有明确的会议/讨论/协调事项。')
-    else:
+    out.append('\n### D：会议/讨论/协调事项\n')
+    if d_display:
         for i, item in enumerate(d_display, start=1):
             out.append(f'- D{i}: {item}')
+    else:
+        out.append('- 今天没有需要单列的会议决策项；固定安排已放在硬约束里。')
 
-    out.append('\n## 今日日程\n')
-    out.extend(schedule)
+    out.append('\n## 今天不排入主线\n')
+    if not_in_mainline:
+        for item in not_in_mainline:
+            out.append(f'- {item}')
+    else:
+        out.append('- 当前没有明显需要刻意压住的不抢主位事项。')
+
+    out.append('\n## 这样排的逻辑\n')
+    for note in logic_notes:
+        out.append(f'- {note}')
 
     out.append('\n## 收工前\n')
     out.append('- 回填 1 条完成事项 + 1 句最大推进。')
     out.append('- 重新决策未完成事项，并写明天第一步。')
 
+    out.append('\n## Todays Completed Items\n')
+    out.append('- [ ] 待在今天执行后回填')
+
+    out.append('\n## Daily Review\n')
+    out.append('- Biggest progress: 待今晚复盘填写')
+    out.append('- Main interruption: 待今晚复盘填写')
+    out.append('- Work experience: 待今晚复盘填写')
+    out.append('- Roll forward or delegate: 今日收工前重新决策未完成事项')
+    out.append('- Tomorrow First Move: 待今晚复盘填写')
+
     out.append('\n## 接下来 1-3 步\n')
     out.append(f"- 先按今日主结果开工：{a_display[0] if a_display else strip_priority_prefix(tomorrow_first_move)}")
-    if not calendar_read_succeeded(calendar_source):
-        out.append('- 先校正今天固定会议，再最终确认时间块。')
-    elif inbox_items:
-        out.append('- 先把 Inbox 做进明天 / 留本周 / 转项目事实 / 仅记录的判断，不自动塞进 A/B/C/D。')
-    elif decided_for_today:
-        out.append('- 先把昨晚已承接的 Inbox 项编进今天的 A/B/C/D 和时间块。')
+    if hard_lines:
+        out.append('- 先执行硬约束，再直接进入第一块主线，不在中间重开新题。')
     else:
-        out.append('- 把今日新增事项先收进 Inbox，再决定是否进入今天。')
+        out.append('- 先核对飞书日历里的固定安排，再启动第一块主线。')
+    if inbox_items:
+        out.append('- 把新增事项先收进 Inbox，收工前再决定是否进入明天，不自动塞进主线。')
+    elif decided_for_today:
+        out.append('- 只承接昨晚已经决策进今天的事项，不再额外扩充主线。')
+    else:
+        out.append('- 把新增事项先收进 Inbox，再决定是否进入今天。')
     out.append('- 收工前补日复盘，并写下明天第一步。')
     return '\n'.join(out) + '\n'
 
@@ -1465,32 +1902,57 @@ def main() -> None:
         weekly_schedule,
     )
     today_file_schedule = today_schedule(today_text)
-    calendar_events: list[dict] = []
-    calendar_source = 'calendar integration disabled'
-    a_items, b_items, c_items, d_items = choose_lightweight_day_items(
-        exploded_weekly_goals,
-        exploded_monthly_goals,
-        exploded_role_goals,
-        exploded_unfinished,
-        tomorrow_first_move,
-        exploded_decided_for_today,
-        inbox_items,
-        calendar_events,
-        calendar_source,
+    calendar_events, calendar_source = query_calendar_events(today)
+    schedule_signal_rows = (
+        parse_calendar_rows(calendar_events)
+        if calendar_read_succeeded(calendar_source) and calendar_events
+        else parse_schedule_rows(today_file_schedule or weekly_schedule)
     )
+    if schedule_signal_rows:
+        a_items, _unused_b_items, c_items, d_items = choose_day_items(
+            exploded_weekly_goals,
+            exploded_monthly_goals,
+            exploded_role_goals,
+            exploded_unfinished,
+            tomorrow_first_move,
+            monthly_hras_items,
+            weekly_hras_items,
+            schedule_signal_rows,
+            'calendar_event' if calendar_read_succeeded(calendar_source) and calendar_events else 'weekly_schedule',
+        )
+        b_items = build_urgent_items(a_items, exploded_unfinished, exploded_weekly_goals, c_items, d_items)
+        if not c_items:
+            c_items = build_followups(a_items, weekly_goals, weekly_hras_items)
+    else:
+        a_items, b_items, c_items, d_items = choose_lightweight_day_items(
+            exploded_weekly_goals,
+            exploded_monthly_goals,
+            exploded_role_goals,
+            exploded_unfinished,
+            tomorrow_first_move,
+            exploded_decided_for_today,
+            inbox_items,
+            calendar_events,
+            calendar_source,
+        )
 
     schedule_source = calendar_source
     if calendar_read_succeeded(calendar_source):
         schedule = schedule_from_calendar(calendar_events, a_items, c_items, d_items)
     else:
-        fallback_rows = today_file_schedule or weekly_schedule
-        primary_result = a_items[0] if a_items else strip_priority_prefix(tomorrow_first_move)
-        schedule = schedule_suggestions_without_calendar(fallback_rows, primary_result)
-        schedule_source = (
-            today_source
-            if today_file_schedule
-            else (weekly_time_commitment_source if weekly_schedule and weekly_time_commitment_source != 'weekly time commitments missing' else weekly_source)
-        )
+        if today_file_schedule:
+            schedule = today_file_schedule
+            schedule_source = today_source
+        elif weekly_schedule:
+            schedule = weekly_schedule
+            schedule_source = (
+                weekly_time_commitment_source
+                if weekly_time_commitment_source != 'weekly time commitments missing'
+                else weekly_source
+            )
+        else:
+            schedule = fallback_schedule(a_items, c_items, d_items)
+            schedule_source = 'synthetic fallback schedule'
 
     carry = []
     for item in exploded_decided_for_today[:3]:

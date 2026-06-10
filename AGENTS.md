@@ -28,9 +28,11 @@ This repository is the source-of-truth copy of the `lmi-management-system` skill
 
 ## Runtime Contracts
 
-- Daily plan consumers expect headings such as `## A：重要事项`, `## B：紧要事项`, `## C：联络/追踪事项`, `## D：会议/讨论/协调事项`, `## Schedule`, `## 今日已完成事项`, and `## 日复盘`.
-- Focus reminder parsing depends on `## A：重要事项`, `## B：紧要事项`, and `## Schedule`.
-- Daily review parsing depends on the daily plan headings above.
+- Daily plan consumers now expect the user-facing order `## 昨日承接`, `## 今日主结果`, `## 硬约束`, `## 今日时间安排`, `## 事项归位`, `## 今天不排入主线`, `## 这样排的逻辑`, `## 收工前`, `## Todays Completed Items`, and `## Daily Review`.
+- Under `## 事项归位`, keep machine-readable category headings as `### A：重要事项`, `### B：紧要事项`, `### C：联络/追踪事项`, and `### D：会议/讨论/协调事项`.
+- Focus reminder parsing depends on the category headings above plus `## 今日时间安排`.
+- Daily review and weekly review parsing depend on the headings above and on `## Todays Completed Items` / `## Daily Review`.
+- Legacy headings such as top-level `## A：重要事项` and `## Schedule` are still supported for compatibility, but new edits should follow the new structure unless a migration requires otherwise.
 - Weekly plan and review generators parse table and section labels in existing templates; change headings only with corresponding parser updates.
 - `workspace-azai/memory` is the primary LMI memory home. Fallback to `workspace-main/memory` must remain opt-in recovery through `LMI_ALLOW_MAIN_MEMORY_FALLBACK=1`.
 - Keep generated user-facing replies concise and manager-friendly Chinese unless the user asks otherwise.

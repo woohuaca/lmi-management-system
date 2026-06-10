@@ -36,6 +36,9 @@ PLACEHOLDER_MARKERS = (
     '待今晚',
     '计划中',
 )
+CATEGORY_A_HEADINGS = ['## A：重要事项', '### A：重要事项']
+COMPLETED_HEADINGS = ['## Todays Completed Items', '## 今日已完成事项']
+SCHEDULE_HEADINGS = ['## Schedule', '## 今日日程', '## 今日时间安排']
 
 
 def week_bounds(today: date) -> tuple[date, date]:
@@ -146,15 +149,18 @@ def lines_under(text: str, heading: str) -> list[str]:
     lines = text.splitlines()
     out: list[str] = []
     capture = False
+    heading_level = len(heading) - len(heading.lstrip('#'))
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith(heading):
+        if stripped == heading:
             capture = True
             continue
-        if capture and stripped.startswith('## '):
-            break
+        if capture and stripped.startswith('#'):
+            current_level = len(stripped) - len(stripped.lstrip('#'))
+            if current_level <= heading_level:
+                break
         if capture and stripped:
-            out.append(stripped)
+            out.append(line.rstrip())
     return out
 
 
@@ -196,6 +202,14 @@ def clean_status_text(text: str) -> str:
 
 
 def extract_primary_result(text: str) -> str:
+    for line in lines_under(text, '## 今日主结果'):
+        stripped = clean_status_text(line)
+        if stripped.startswith('- '):
+            stripped = stripped[2:].strip()
+        candidate = strip_priority_label(stripped)
+        if meaningful(candidate):
+            return candidate
+
     for line in lines_under(text, '## Today’s Primary Result'):
         stripped = clean_status_text(line)
         if stripped.startswith('- '):
@@ -210,23 +224,30 @@ def extract_primary_result(text: str) -> str:
             if meaningful(candidate):
                 return candidate
 
-    for line in lines_under(text, '## A：重要事项'):
-        stripped = line.strip()
-        if stripped.startswith('- '):
-            candidate = clean_status_text(re.sub(r'^- ', '', stripped))
-            candidate = strip_priority_label(candidate)
-            if meaningful(candidate):
-                return candidate
+    for heading in CATEGORY_A_HEADINGS:
+        for line in lines_under(text, heading):
+            stripped = line.strip()
+            if line.startswith('- '):
+                candidate = clean_status_text(re.sub(r'^- ', '', stripped))
+                candidate = strip_priority_label(candidate)
+                if meaningful(candidate):
+                    return candidate
     return ''
 
 
 def section_bullets(text: str, heading: str) -> list[str]:
     items: list[str] = []
     for line in lines_under(text, heading):
-        stripped = line.strip()
-        if stripped.startswith('- '):
-            items.append(clean_md(stripped[2:]))
+        if line.startswith('- '):
+            items.append(clean_md(line[2:]))
     return items
+
+
+def section_bullets_any(text: str, headings: list[str]) -> list[str]:
+    items: list[str] = []
+    for heading in headings:
+        items.extend(section_bullets(text, heading))
+    return dedupe_keep_order(items)
 
 
 def parse_weekly_goals(text: str) -> list[str]:
@@ -303,10 +324,9 @@ def weekly_daily_files(monday: date, friday: date) -> list[tuple[date, Path, str
 
 def extract_completed(text: str) -> list[str]:
     items: list[str] = []
-    for line in lines_under(text, '## Todays Completed Items'):
-        stripped = line.strip()
-        if stripped.startswith('- [x]'):
-            items.append(clean_md(re.sub(r'^- \[x\]\s*', '', stripped)))
+    for item in section_bullets_any(text, COMPLETED_HEADINGS):
+        if item.startswith('[x]'):
+            items.append(clean_md(re.sub(r'^\[x\]\s*', '', item)))
     custom_rows = parse_table_rows(section_lines(text, ['### ✅ 已完成事项'], ['### ', '## ']))
     for row in custom_rows:
         if len(row) >= 3 and row[0] != '时间':
@@ -392,11 +412,7 @@ def extract_tomorrow_first_move(text: str) -> str:
 
 def extract_standard_worklog(text: str) -> list[str]:
     entries: list[str] = []
-    for line in lines_under(text, '## Schedule'):
-        stripped = line.strip()
-        if not stripped.startswith('- '):
-            continue
-        raw = stripped[2:].strip()
+    for raw in section_bullets_any(text, SCHEDULE_HEADINGS):
         if any(marker in raw for marker in ('✅', '已完成', '🍅')):
             candidate = clean_status_text(raw)
             if meaningful(candidate):
