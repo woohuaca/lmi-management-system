@@ -4,6 +4,9 @@
 
 - Planning assumption:
 - Ideal weekly rhythm:
+- Best deep-work windows:
+- Recovery / buffer rule after long blocks:
+- Fixed commitments that must enter calendar:
 
 ## Sunday
 
@@ -53,11 +56,25 @@
 - Block 2:
 - Block 3:
 
+## Fixed Anchors And Calendar Commitments
+
+- Feishu calendar block 1:
+- Feishu calendar block 2:
+- Feishu calendar block 3:
+
+## Recovery And Elasticity
+
+- Recovery buffer after long work:
+- Buffer after meetings / travel:
+- Where the week should stay intentionally under-filled:
+
 ## Review
 
 - What this schedule prioritizes:
 - What it leaves out:
 - Where drift is most likely:
+- Which key task got the best large block:
+- Which block still needs more recovery space:
 
 ## Next 1-3 Moves
 

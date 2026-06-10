@@ -6,7 +6,22 @@ import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from lmi_time_commitments import build_weekly_time_commitment_payload, save_weekly_time_commitments
+
 PRIMARY_MEMORY_DIR = Path(os.environ.get('LMI_PRIMARY_MEMORY_DIR', str(Path.home() / '.openclaw' / 'workspace-azai' / 'memory'))).expanduser()
+RECOVERY_BUFFER_HINT = '块后预留 20-30 分钟恢复 / 纪要 / 切换缓冲'
+PROTECTED_BLOCK_HINT = '优先保护 120-180 分钟连续大块'
+CALENDAR_SYNC_TIMEZONE = 'Asia/Shanghai'
+WEEKDAY_TO_OFFSET = {
+    'Mon': 0,
+    'Tue': 1,
+    'Wed': 2,
+    'Thu': 3,
+    'Fri': 4,
+    'Sat': 5,
+    'Sun': 6,
+}
+SLOT_RE = re.compile(r'^(?P<day>Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?P<start>\d{2}:\d{2})-(?P<end>\d{2}:\d{2})$')
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -656,6 +671,88 @@ def build_followups(goals: list[str]) -> tuple[str, str, str]:
     return must, delegate, follow
 
 
+def protected_block_kind(goal: str) -> str:
+    clean = clean_md(goal).lower()
+    if any(marker in clean for marker in ['调研', '洞察', '设计', '概念', '写作', '初稿', 'charter', 'skill', '复盘']):
+        return '深度推进大块'
+    if any(marker in clean for marker in ['客户', '跟进', '评审', '对齐', '试点', '验证']):
+        return '推进 / 对齐大块'
+    return '关键任务保护块'
+
+
+def build_protected_blocks(selected_goal_texts: list[str]) -> list[dict[str, str]]:
+    protected_defaults = [
+        ('Mon 09:30-12:00', '周初晨间深度块'),
+        ('Tue 14:00-17:00', '周中整块推进窗'),
+        ('Thu 09:30-12:00', '周内第二个深度块'),
+    ]
+    blocks: list[dict[str, str]] = []
+    for idx, (slot, note) in enumerate(protected_defaults):
+        linked_goal = (
+            selected_goal_texts[idx]
+            if len(selected_goal_texts) > idx
+            else (selected_goal_texts[-1] if selected_goal_texts else '待补充')
+        )
+        blocks.append(
+            {
+                'slot': slot,
+                'goal': linked_goal,
+                'kind': protected_block_kind(linked_goal),
+                'note': note,
+                'buffer': RECOVERY_BUFFER_HINT,
+            }
+        )
+    return blocks
+
+
+def build_calendar_commitments(blocks: list[dict[str, str]]) -> list[str]:
+    commitments: list[str] = []
+    for block in blocks[:3]:
+        commitments.append(f"{block['slot']} -> {block['goal']}")
+    commitments.append('周五复盘 / 计划与实际对照 -> 固定写入周收口时段')
+    return commitments
+
+
+def build_calendar_sync_items(
+    blocks: list[dict[str, str]],
+    week_start: date,
+    *,
+    source_file: str,
+) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    for idx, block in enumerate(blocks, start=1):
+        match = SLOT_RE.match(block['slot'])
+        if not match:
+            continue
+        block_date = week_start + timedelta(days=WEEKDAY_TO_OFFSET[match.group('day')])
+        goal = clean_md(block['goal'])
+        description_lines = [
+            'LMI 周计划自动生成时间承诺',
+            f'关联目标：{goal}',
+            f"块型：{block['kind']}",
+            f"安排说明：{block['note']}",
+            f"缓冲建议：{block['buffer']}",
+            f'来源文件：{source_file}',
+        ]
+        items.append(
+            {
+                'id': f'weekly-block-{idx}-{block_date.isoformat()}',
+                'kind': 'protected_block',
+                'slot': block['slot'],
+                'date': block_date.isoformat(),
+                'start_time': match.group('start'),
+                'end_time': match.group('end'),
+                'timezone': CALENDAR_SYNC_TIMEZONE,
+                'summary': f'LMI 周时间块：{goal}',
+                'description': '\n'.join(description_lines),
+                'goal': goal,
+                'note': block['note'],
+                'buffer': block['buffer'],
+            }
+        )
+    return items
+
+
 def build_weekly_plan(
     anchor_date: date | None = None,
     target_week_offset: int = 0,
@@ -667,6 +764,8 @@ def build_weekly_plan(
     target_date = shift_week(base_date, target_week_offset)
     monday, friday = week_bounds(target_date)
     week_label = f'{monday.isoformat()} to {friday.isoformat()}'
+    canonical_path = PRIMARY_MEMORY_DIR / f'周计划-{monday.isoformat()}-{friday.strftime("%d")}.md'
+    compatibility_path = PRIMARY_MEMORY_DIR / f'{monday.isoformat()}_weekly_plan.md'
 
     monthly_path, monthly_source = current_month_monthly_plan(target_date)
     role_path, role_source = current_month_role_file(target_date)
@@ -814,11 +913,8 @@ def build_weekly_plan(
             activity_pairs.append((activity, linked_role, linked_goal))
 
     preview_inputs = last_moves or monthly_moves
-    protected_defaults = [
-        'Mon 09:30-12:00',
-        'Tue 14:00-17:00',
-        'Thu 09:30-12:00',
-    ]
+    protected_blocks = build_protected_blocks(selected_goal_texts)
+    calendar_commitments = build_calendar_commitments(protected_blocks)
 
     out: list[str] = []
     out.append(f'# {title}\n')
@@ -846,6 +942,7 @@ def build_weekly_plan(
         out.append(f'- 需要拆解到本周的月重点目标: {"；".join(monthly_goals[:3])}')
     if monthly_activities:
         out.append(f'- 本月需要继续保护的高回报活动: {"；".join(monthly_activities[:3])}')
+    out.append(f'- 时间安排原则: {PROTECTED_BLOCK_HINT}；长任务后{RECOVERY_BUFFER_HINT}')
 
     out.append('\n## 本周关键目标\n')
     out.append('| 优先级 | 角色 | 本周目标 | 成功定义 | 截止日 | 备注 |')
@@ -880,12 +977,20 @@ def build_weekly_plan(
     out.append(f'- 重点跟进即可: {follow_up_item}')
 
     out.append('\n## 保护时间块\n')
-    for idx, block in enumerate(protected_defaults, start=1):
-        linked_goal = selected_goal_texts[idx - 1] if len(selected_goal_texts) >= idx else (selected_goal_texts[-1] if selected_goal_texts else '待补充')
-        out.append(f'- 时间块{idx}: {block}')
-        out.append(f'  - 关联目标: {linked_goal}')
+    for idx, block in enumerate(protected_blocks, start=1):
+        out.append(f"- 时间块{idx}: {block['slot']}")
+        out.append(f"  - 关联目标: {block['goal']}")
+        out.append(f"  - 块型: {block['kind']}")
+        out.append(f"  - 安排说明: {block['note']}；{PROTECTED_BLOCK_HINT}")
+        out.append(f"  - 缓冲建议: {block['buffer']}")
     if rhythm:
         out.append(f'- 每周节奏提醒: {"；".join(rhythm)}')
+
+    out.append('\n## 固定承诺与日历同步\n')
+    out.append('- 已确认的会议、外出、评审、复盘、关键推进块，不要只留在计划文档中。')
+    out.append('- 一旦时间确定，应同步写入飞书日历，避免真实安排与周计划脱节。')
+    for item in calendar_commitments:
+        out.append(f'- 建议写入飞书日历: {item}')
 
     out.append('\n## 周末复盘钩子\n')
     out.append(f'- 到周五必须成立的结果: {success_def}')
@@ -905,8 +1010,17 @@ def build_weekly_plan(
     out.append('- 周五复盘时直接回到计划与实际对照，并决定哪些事项继续 / 延后 / 授权 / 删除')
 
     content = '\n'.join(out) + '\n'
-    canonical_path = PRIMARY_MEMORY_DIR / f'周计划-{monday.isoformat()}-{friday.strftime("%d")}.md'
-    compatibility_path = PRIMARY_MEMORY_DIR / f'{monday.isoformat()}_weekly_plan.md'
+    calendar_sync_items = build_calendar_sync_items(protected_blocks, monday, source_file=canonical_path.name)
+    commitment_payload = build_weekly_time_commitment_payload(
+        week_start=monday,
+        week_end=friday,
+        title=title,
+        source_file=canonical_path.name,
+        protected_blocks=protected_blocks,
+        calendar_commitments=calendar_commitments,
+        calendar_sync_items=calendar_sync_items,
+    )
+    save_weekly_time_commitments(PRIMARY_MEMORY_DIR, commitment_payload)
     return content, canonical_path, compatibility_path
 
 

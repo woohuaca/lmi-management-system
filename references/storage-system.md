@@ -41,6 +41,8 @@ Suggested structure:
 - `memory/YYYY-MM-DD.md`: raw daily log and lightweight daily review
 - `memory/日报归档/YYYY-MM-DD_工作日志.md`: cleaned daily work log
 - `memory/周复盘-YYYY-MM-DD-YY.md`: weekly review
+- `memory/时间承诺/周时间承诺-YYYY-MM-DD-YY.json`: weekly protected blocks, recovery buffers, and calendar-sync commitments
+- `memory/时间承诺/周时间承诺同步-YYYY-MM-DD-YY.json`: sync state between weekly time commitments and actual calendar event IDs
 - `memory/月复盘-YYYY-MM.md`: monthly review
 - `memory/角色复盘-角色名-YYYY-MM.md`: role review
 - `memory/项目事实/...`: stable project facts and validated conclusions
@@ -94,6 +96,8 @@ Recommended handling:
 - Use absolute dates in every file name.
 - Separate facts from interpretations.
 - Keep daily files lightweight; move durable conclusions into long-term or project files.
+- Keep recurring time commitments as structured objects when possible, not only as prose inside weekly plans.
+- Keep calendar sync state separate from human-readable plans so the model does not have to guess whether a block has already been written into Feishu calendar.
 - Weekly and monthly reviews should summarize, not just repeat daily logs.
 - Do not store raw ideas directly as project facts.
 - Do not let unfinished tasks roll forever without a new decision.

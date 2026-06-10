@@ -21,12 +21,15 @@ Use this skill when the user asks for any of the following:
 
 - Goals come before tasks.
 - Time serves goals, not the other way around.
+- Protect the best large blocks for the most important work, not for leftovers.
+- Leave recovery and buffer time after long or high-cognitive tasks instead of packing the day wall-to-wall.
 - Focus on the few highest-return activities.
 - Distinguish role, goal, project, action, and miscellaneous work.
 - Leadership starts with self-management, then management rhythm, then team impact.
 - Reviews must produce adjustments, not just observations.
 
 Read [references/lmi-core.md](references/lmi-core.md) if the user needs the LMI framing.
+Read [references/intelligent-lmi-collaboration-system.md](references/intelligent-lmi-collaboration-system.md) when the user wants to improve, redesign, or evolve this skill into a stronger long-term collaboration system.
 
 ## Work Modes
 
@@ -135,6 +138,8 @@ Read [references/agent-collaboration-rules.md](references/agent-collaboration-ru
 - Prefer cleaning Inbox during the evening daily review, not during the morning plan.
 - For inbox cleanup decisions, use exactly these buckets: `进明天` / `留在本周` / `转项目事实候选` / `丢弃 / 仅记录`.
 - For default `今日计划` output, keep the structure lightweight: `昨日承接 / 今日主结果 / A/B/C/D / 今日日程 / 收工前 / Next 1-3 Moves`.
+- For daily and weekly scheduling, protect the user's best large blocks for key work, leave post-task recovery buffers, and avoid stacking heavy work back-to-back without elasticity.
+- When fixed commitments are known, prefer updating them into Feishu calendar or another stable calendar source so the plan can be checked against real time commitments.
 - For default `今日计划`, do not include pomodoro or focus-block suggestions unless the user explicitly asks to start focus mode.
 - Until a real calendar connector is available, assume default daily planning runs in no-calendar mode. Say this clearly and do not present fallback time blocks as final schedule.
 - In daily plans, show at most 3 unprocessed inbox items as re-decision inputs without exposing Inbox metadata.

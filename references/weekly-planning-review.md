@@ -13,6 +13,9 @@ This is the bridge between monthly goals and daily execution.
 - Reserve `C` for contact or follow-up items and `D` for meetings, discussions, or coordination.
 - Separate work the user must personally drive from work that can be delegated or followed up.
 - Protect time for high-return actions before filling meetings and admin work.
+- Put key work into the user's best large blocks first, rather than squeezing it around other commitments.
+- After long or high-intensity blocks, leave recovery / buffer space so the weekly plan is survivable, not just theoretically full.
+- Use the week to decide which commitments should be written into Feishu calendar as fixed blocks, checkpoints, travel, or review anchors.
 - Include management rhythm actions for managers such as one-on-ones, checkpoints, team reviews, recruiting, or coaching.
 - Add one or two review hooks so the end-of-week review can test whether the week succeeded.
 
@@ -60,3 +63,5 @@ This is the bridge between monthly goals and daily execution.
 - What mechanism should be tightened next week?
 - Which role advanced most this week, and which role was under-served?
 - What method from this week is worth reusing next week?
+- Which block needed more buffer or recovery time than originally planned?
+- Which key task failed because it was not placed into a suitable large block?

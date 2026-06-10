@@ -16,6 +16,11 @@ Use this reference for daily work planning and daily review.
 - Put appointments and time-specific work on the schedule side.
 - Keep the left side for priority decisions, not just raw capture.
 - Mark progress status when relevant: delegated, in progress, postponed, completed.
+- Protect the best large block of the day for the main result or highest-return action, not for admin leftovers.
+- After any long or cognitively heavy block, leave recovery or buffer time before the next major task.
+- Do not stack multiple deep-work blocks, external meetings, or travel-heavy activities back-to-back without elasticity.
+- When fixed appointments or action commitments are confirmed, update them into Feishu calendar or another stable calendar source instead of keeping them only in chat or markdown.
+- If the day has external events, travel, or uncertain duration, show the schedule as provisional and keep slack instead of pretending the whole day is fully knowable.
 
 ## Daily Review Rules
 

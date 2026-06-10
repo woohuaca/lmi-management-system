@@ -9,6 +9,7 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from lmi_execution_support import load_inbox_snapshot, load_tomorrow_carry_items
+from lmi_time_commitments import load_weekly_time_commitments
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -97,6 +98,31 @@ SCHEDULE_ADMIN_MARKERS = (
     '出发',
     '休整',
     '碎务',
+)
+LONG_BLOCK_THRESHOLD_MINUTES = 90
+RECOVERY_BUFFER_MINUTES = 20
+HEAVY_TASK_MARKERS = (
+    '深度推进',
+    '重点推进',
+    '外出',
+    '发布会',
+    '拜访',
+    '客户活动',
+    '评审',
+    '工作坊',
+    '路演',
+)
+CALENDAR_SYNC_MARKERS = (
+    '会议',
+    '评审',
+    '外出',
+    '出发',
+    '返程',
+    '发布会',
+    '拜访',
+    '复盘',
+    '对齐',
+    '协调',
 )
 
 
@@ -444,6 +470,31 @@ def final_bucket(thread: dict) -> str:
 def active_schedule_minutes(rows: list[dict]) -> tuple[int, int]:
     active = [row['minutes'] for row in rows if not is_admin_schedule_task(row['task'])]
     return sum(active), max(active, default=0)
+
+
+def is_heavy_schedule_task(text: str) -> bool:
+    clean = strip_priority_prefix(clean_md(text))
+    return any(marker in clean for marker in HEAVY_TASK_MARKERS)
+
+
+def best_large_block(rows: list[dict]) -> dict | None:
+    candidates = [
+        row for row in rows
+        if not is_admin_schedule_task(row['task']) and row['minutes'] >= LONG_BLOCK_THRESHOLD_MINUTES
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda row: (row['minutes'], -row['start']))
+
+
+def has_fixed_commitment_rows(rows: list[dict]) -> bool:
+    for row in rows:
+        task = row['task']
+        if is_admin_schedule_task(task):
+            continue
+        if any(marker in task for marker in CALENDAR_SYNC_MARKERS):
+            return True
+    return False
 
 
 def calendar_read_succeeded(calendar_source: str) -> bool:
@@ -903,7 +954,8 @@ def schedule_from_calendar(events: list[dict], a_items: list[str], c_items: list
         if start > cursor + 45 and not overlaps_lunch(cursor, start):
             free_slots.append((cursor, start))
         schedule.append(f'- {minute_label(start)}-{minute_label(end)} 日历安排 -> {title}')
-        cursor = max(cursor, end + 10)
+        buffer_minutes = RECOVERY_BUFFER_MINUTES if (end - start) >= LONG_BLOCK_THRESHOLD_MINUTES or is_heavy_schedule_task(title) else 10
+        cursor = max(cursor, end + buffer_minutes)
     if cursor < 12 * 60 < day_end and not any('午间留白' in row for row in schedule):
         if cursor < 12 * 60:
             block_end = 12 * 60
@@ -985,9 +1037,14 @@ def ensure_closeout_block(schedule: list[str], primary_result: str) -> list[str]
     return schedule + [f'- {minute_label(last_end)}-{minute_label(day_end)} {close_label}']
 
 
-def schedule_suggestions_without_calendar(rows: list[str]) -> list[str]:
+def schedule_suggestions_without_calendar(rows: list[str], primary_result: str) -> list[str]:
     if not rows:
-        return ['- 当前未接入自动飞书日历；请先确认今天固定会议后，再排 A1 / A2 的时间块。']
+        return [
+            '- 当前未接入自动飞书日历；请先确认今天固定会议后，再排 A1 / A2 的时间块。',
+            f'- 优先为 `{primary_result}` 预留今天最完整的 90-180 分钟连续大块，不要塞进碎片时间。',
+            f'- 长任务、外出或密集会议后，至少预留 {RECOVERY_BUFFER_MINUTES}-30 分钟恢复 / 收口缓冲。',
+            '- 一旦今天的固定会议、外出或关键推进块确认，请同步更新到飞书日历。',
+        ]
     suggestions = ['- 当前未接入自动飞书日历；以下仅为建议时间块，需先按真实日历校正。']
     for row in rows[:5]:
         if '->' in row:
@@ -995,6 +1052,23 @@ def schedule_suggestions_without_calendar(rows: list[str]) -> list[str]:
             suggestions.append(f'{left}-> 建议：{right.strip()}')
         else:
             suggestions.append(f'{row}（建议）')
+    parsed_rows = parse_schedule_rows(rows)
+    best_block = best_large_block(parsed_rows)
+    if best_block:
+        suggestions.append(
+            f"- 建议把 `{primary_result}` 放进今天最完整的大块："
+            f"{minute_label(best_block['start'])}-{minute_label(best_block['end'])}。"
+        )
+    if any(
+        row['minutes'] >= LONG_BLOCK_THRESHOLD_MINUTES or is_heavy_schedule_task(row['task'])
+        for row in parsed_rows
+        if not is_admin_schedule_task(row['task'])
+    ):
+        suggestions.append(
+            f'- 若今天有长任务 / 外出 / 密集会议，后面请至少留 {RECOVERY_BUFFER_MINUTES}-30 分钟恢复或收口，不建议重任务无缝连排。'
+        )
+    if has_fixed_commitment_rows(parsed_rows):
+        suggestions.append('- 今天已知的固定承诺一旦确认，请同步写进飞书日历，避免计划与真实安排继续漂移。')
     return suggestions
 
 
@@ -1236,6 +1310,26 @@ WEEKDAY_TO_CN = {
 }
 
 
+def structured_weekly_schedule_for_today(payload: dict, today: date) -> list[str]:
+    aliases = WEEKDAY_ALIASES[today.weekday()]
+    rows: list[str] = []
+    for block in payload.get('protected_blocks', []):
+        slot = clean_md(str(block.get('slot', '')).strip())
+        match = re.match(r'^(?P<label>[A-Za-z\u4e00-\u9fa5]+)\s+(?P<start>\d{2}:\d{2})-(?P<end>\d{2}:\d{2})$', slot)
+        if not match:
+            continue
+        label = match.group('label')
+        if label not in aliases:
+            continue
+        goal = clean_md(str(block.get('goal', '')).strip()) or '待补充'
+        kind = clean_md(str(block.get('kind', '')).strip())
+        if kind:
+            rows.append(f"- {match.group('start')}-{match.group('end')} 周时间承诺 -> {goal}（{kind}）")
+        else:
+            rows.append(f"- {match.group('start')}-{match.group('end')} 周时间承诺 -> {goal}")
+    return rows
+
+
 def weekly_schedule_for_today(text: str, today: date) -> list[str]:
     lines = text.splitlines()
     weekday_label = WEEKDAY_TO_CN[today.weekday()]
@@ -1335,6 +1429,7 @@ def main() -> None:
         if weekly_path and str(weekly_path).startswith(str(PRIMARY_MEMORY_DIR))
         else ('workspace-main/memory (fallback)' if weekly_path and FALLBACK_MEMORY_DIR is not None else 'weekly plan missing')
     )
+    weekly_time_commitments, weekly_time_commitment_source = load_weekly_time_commitments(today)
 
     biggest_progress = extract_progress(yesterday_text)
     unfinished = extract_unfinished(yesterday_text)
@@ -1361,7 +1456,7 @@ def main() -> None:
     unfinished_display = canonicalize_display_items(exploded_unfinished, limit=5)
     inbox_display = inbox_redecision_texts(inbox_items, limit=3)
 
-    weekly_schedule = weekly_schedule_for_today(weekly_text, today)
+    weekly_schedule = structured_weekly_schedule_for_today(weekly_time_commitments, today) or weekly_schedule_for_today(weekly_text, today)
     weekly_warning = weekly_parse_warning(
         weekly_source,
         weekly_role,
@@ -1389,8 +1484,13 @@ def main() -> None:
         schedule = schedule_from_calendar(calendar_events, a_items, c_items, d_items)
     else:
         fallback_rows = today_file_schedule or weekly_schedule
-        schedule = schedule_suggestions_without_calendar(fallback_rows)
-        schedule_source = today_source if today_file_schedule else weekly_source
+        primary_result = a_items[0] if a_items else strip_priority_prefix(tomorrow_first_move)
+        schedule = schedule_suggestions_without_calendar(fallback_rows, primary_result)
+        schedule_source = (
+            today_source
+            if today_file_schedule
+            else (weekly_time_commitment_source if weekly_schedule and weekly_time_commitment_source != 'weekly time commitments missing' else weekly_source)
+        )
 
     carry = []
     for item in exploded_decided_for_today[:3]:
